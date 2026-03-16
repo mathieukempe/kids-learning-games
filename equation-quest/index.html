@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equation Quest</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* ── Back link ── */
+.back-link {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 14px;
+  z-index: 100;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.back-link:hover { color: #ffd32a; }
+
+/* ── Screens ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 900px;
+  padding: 20px;
+}
+.screen.active { display: flex; }
+
+/* ── Title screen ── */
+#title-screen {
+  text-align: center;
+}
+#title-screen h1 {
+  font-size: 52px;
+  background: linear-gradient(135deg, #ffd32a, #ff9f43, #ffd32a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  text-shadow: none;
+}
+#title-screen .subtitle {
+  color: rgba(255,255,255,0.4);
+  font-size: 16px;
+  margin-bottom: 40px;
+}
+.dungeon-select {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+.dungeon-card {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 220px;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.3s, background 0.2s;
+  text-align: center;
+}
+.dungeon-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,211,42,0.5);
+  background: rgba(255,255,255,0.1);
+}
+.dungeon-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.dungeon-card.locked:hover {
+  transform: none;
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+}
+.dungeon-card .icon { font-size: 40px; margin-bottom: 12px; }
+.dungeon-card h3 { font-size: 18px; margin-bottom: 6px; }
+.dungeon-card p { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.4; }
+.dungeon-card .lock-label {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #ff6b6b;
+  background: rgba(255,107,107,0.15);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+.dungeon-card .complete-label {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #7bed9f;
+  background: rgba(123,237,159,0.15);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.treasures-display {
+  margin-top: 10px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  font-size: 28px;
+}
+.treasure-slot {
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.treasure-slot.empty { opacity: 0.3; }
+
+/* ── HUD ── */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10,10,26,0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 14px;
+}
+#hud .level-name { color: #ffd32a; font-weight: 700; }
+#hud .room-count { color: rgba(255,255,255,0.5); }
+#hud .score-display { color: #7bed9f; font-weight: 600; }
+
+/* ── Dungeon map ── */
+#game-screen { padding-top: 60px; }
+
+.dungeon-map-wrap {
+  position: relative;
+  margin: 10px auto 20px;
+}
+
+canvas#dungeon-canvas {
+  display: block;
+  border-radius: 12px;
+}
+
+/* ── Equation panel ── */
+.equation-panel {
+  background: linear-gradient(180deg, rgba(20,20,50,0.95), rgba(10,10,30,0.98));
+  border: 2px solid rgba(255,211,42,0.25);
+  border-radius: 20px;
+  padding: 30px 36px;
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 0 40px rgba(255,211,42,0.08), inset 0 0 60px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.equation-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,211,42,0.6), transparent);
+}
+.equation-panel .door-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: rgba(255,211,42,0.5);
+  margin-bottom: 16px;
+}
+.equation-panel .difficulty-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-bottom: 14px;
+}
+.difficulty-tag.easy { background: rgba(123,237,159,0.15); color: #7bed9f; }
+.difficulty-tag.medium { background: rgba(255,159,67,0.15); color: #ff9f43; }
+.difficulty-tag.hard { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+
+.equation-text {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+.equation-text .missing {
+  display: inline-block;
+  min-width: 56px;
+  border-bottom: 3px solid #ffd32a;
+  color: #ffd32a;
+  position: relative;
+}
+.equation-text .missing.filled {
+  color: #fff;
+  border-bottom-color: rgba(255,255,255,0.3);
+}
+
+.answer-input-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+.answer-input {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,211,42,0.3);
+  border-radius: 12px;
+  color: #ffd32a;
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  width: 140px;
+  padding: 10px 16px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.answer-input:focus {
+  border-color: rgba(255,211,42,0.7);
+  box-shadow: 0 0 20px rgba(255,211,42,0.15);
+}
+.answer-input::placeholder {
+  color: rgba(255,211,42,0.25);
+}
+
+.submit-btn {
+  display: block;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #ffd32a, #ff9f43);
+  color: #1a1a2e;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 36px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.submit-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 20px rgba(255,211,42,0.3);
+}
+
+.feedback {
+  margin-top: 14px;
+  font-size: 15px;
+  min-height: 22px;
+  transition: opacity 0.3s;
+}
+.feedback.correct { color: #7bed9f; }
+.feedback.wrong { color: #ff6b6b; }
+.feedback.hint { color: #ff9f43; font-size: 13px; }
+
+/* ── Path choice ── */
+.path-choice {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.path-btn {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.15s, border-color 0.3s, background 0.2s;
+  text-align: center;
+  min-width: 110px;
+}
+.path-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.1);
+}
+.path-btn.easy { border-color: rgba(123,237,159,0.4); }
+.path-btn.easy:hover { border-color: #7bed9f; }
+.path-btn.medium { border-color: rgba(255,159,67,0.4); }
+.path-btn.medium:hover { border-color: #ff9f43; }
+.path-btn.hard { border-color: rgba(255,107,107,0.4); }
+.path-btn.hard:hover { border-color: #ff6b6b; }
+.path-btn .pts { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+/* ── Victory screen ── */
+#victory-screen { text-align: center; }
+#victory-screen h2 {
+  font-size: 38px;
+  background: linear-gradient(135deg, #ffd32a, #ff9f43);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+#victory-screen .treasure-reveal {
+  font-size: 72px;
+  margin: 20px 0;
+  animation: treasureBounce 0.6s ease;
+}
+@keyframes treasureBounce {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+#victory-screen .stats {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+.btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+/* ── Particles ── */
+canvas#particle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  #title-screen h1 { font-size: 34px; }
+  .dungeon-card { width: 180px; padding: 20px 16px; }
+  .equation-text { font-size: 26px; }
+  .answer-input { font-size: 22px; width: 110px; }
+  .equation-panel { padding: 22px 20px; }
+}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">&#8592; All Games</a>
+
+<canvas id="particle-canvas"></canvas>
+
+<div id="title-screen" class="screen active">
+  <h1>Equation Quest</h1>
+  <p class="subtitle">Solve equations to unlock dungeon doors and find the treasure!</p>
+  <div class="dungeon-select" id="dungeon-select"></div>
+  <div class="treasures-display" id="treasures-display"></div>
+</div>
+
+<div id="game-screen" class="screen">
+  <div id="hud">
+    <span class="level-name" id="hud-level"></span>
+    <span class="room-count" id="hud-room"></span>
+    <span class="score-display" id="hud-score"></span>
+  </div>
+  <div class="dungeon-map-wrap">
+    <canvas id="dungeon-canvas"></canvas>
+  </div>
+  <div class="equation-panel" id="equation-panel" style="display:none;">
+    <div class="door-label">Locked Door</div>
+    <div id="difficulty-tag" class="difficulty-tag easy"></div>
+    <div class="equation-text" id="equation-text"></div>
+    <div class="answer-input-wrap">
+      <input type="number" class="answer-input" id="answer-input" placeholder="?" autocomplete="off">
+    </div>
+    <button class="submit-btn" id="submit-btn">Unlock</button>
+    <div class="feedback" id="feedback"></div>
+  </div>
+  <div id="path-choice-container" style="display:none;">
+    <p style="text-align:center;color:rgba(255,255,255,0.5);margin-bottom:10px;font-size:13px;">Choose your path:</p>
+    <div class="path-choice" id="path-choice"></div>
+  </div>
+</div>
+
+<div id="victory-screen" class="screen">
+  <h2 id="victory-title">Dungeon Cleared!</h2>
+  <div class="treasure-reveal" id="treasure-reveal"></div>
+  <div class="stats" id="victory-stats"></div>
+  <div class="btn-group">
+    <button class="btn-secondary" id="btn-next-dungeon">Next Dungeon</button>
+    <button class="btn-secondary" id="btn-back-menu">Back to Menu</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Constants ──
+  const GRID = 5;
+  const CELL = 70;
+  const GAP = 20;
+  const MAP_PAD = 30;
+  const MAP_SIZE = GRID * CELL + (GRID - 1) * GAP + MAP_PAD * 2;
+
+  const TREASURES = ['\u{1F48E}', '\u{1F451}', '\u{1F525}'];
+  const TREASURE_NAMES = ['Crystal Gem', 'Golden Crown', 'Phoenix Flame'];
+
+  const DUNGEON_DEFS = [
+    { id: 0, name: 'The Misty Cavern', desc: 'Addition & Subtraction', icon: '\u{1F32B}\u{FE0F}' },
+    { id: 1, name: 'The Iron Forge', desc: 'Multiplication & Division', icon: '\u{2694}\u{FE0F}' },
+    { id: 2, name: 'The Arcane Tower', desc: 'Mixed & Two-Step', icon: '\u{1F52E}' }
+  ];
+
+  // ── State ──
+  let progress = loadProgress();
+  let currentDungeon = -1;
+  let grid = [];
+  let playerPos = { r: 0, c: 0 };
+  let currentEquation = null;
+  let currentDifficulty = 'easy';
+  let score = 0;
+  let roomsSolved = 0;
+  let wrongAttempts = 0;
+  let totalAttempts = 0;
+  let pathFromStart = [];
+  let animatingDoor = false;
+  let particles = [];
+  let torchFlicker = 0;
+
+  // ── DOM refs ──
+  const $ = (id) => document.getElementById(id);
+  const screens = document.querySelectorAll('.screen');
+
+  function showScreen(id) {
+    screens.forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+
+  // ── LocalStorage ──
+  function loadProgress() {
+    try {
+      const d = JSON.parse(localStorage.getItem('equationquest_progress'));
+      if (d && typeof d === 'object') return d;
+    } catch(e) {}
+    return { completed: [false, false, false], weakOps: {}, treasures: [null, null, null] };
+  }
+
+  function saveProgress() {
+    localStorage.setItem('equationquest_progress', JSON.stringify(progress));
+  }
+
+  function recordOpResult(opType, correct) {
+    if (!progress.weakOps[opType]) progress.weakOps[opType] = { right: 0, wrong: 0 };
+    if (correct) progress.weakOps[opType].right++;
+    else progress.weakOps[opType].wrong++;
+    saveProgress();
+  }
+
+  function getWeakOps() {
+    const ops = progress.weakOps;
+    const scores = [];
+    for (const op in ops) {
+      const total = ops[op].right + ops[op].wrong;
+      if (total >= 3) {
+        scores.push({ op, accuracy: ops[op].right / total });
+      }
+    }
+    scores.sort((a, b) => a.accuracy - b.accuracy);
+    return scores.filter(s => s.accuracy < 0.75).map(s => s.op);
+  }
+
+  // ── Equation generation ──
+  function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
+  function generateEquation(dungeonId, difficulty) {
+    const weak = getWeakOps();
+    if (dungeonId === 0) return genAddSub(difficulty, weak);
+    if (dungeonId === 1) return genMulDiv(difficulty, weak);
+    return genMixed(difficulty, weak);
+  }
+
+  function genAddSub(diff, weak) {
+    const preferSub = weak.includes('subtraction');
+    const useSub = preferSub ? Math.random() < 0.65 : Math.random() < 0.5;
+
+    if (useSub) {
+      const maxN = diff === 'easy' ? 30 : diff === 'medium' ? 60 : 99;
+      const a = randInt(diff === 'easy' ? 5 : 15, maxN);
+      const b = randInt(diff === 'easy' ? 1 : 5, a - 1);
+      const answer = a - b;
+      const pos = randInt(0, 2);
+      if (pos === 0) return { text: '? \u2212 ' + b + ' = ' + (a - b), display: ['?', ' \u2212 ', b, ' = ', answer], answer: a, op: 'subtraction', hint: 'What minus ' + b + ' gives ' + answer + '?' };
+      if (pos === 1) return { text: a + ' \u2212 ? = ' + answer, display: [a, ' \u2212 ', '?', ' = ', answer], answer: b, op: 'subtraction', hint: answer + ' + ? = ' + a };
+      return { text: a + ' \u2212 ' + b + ' = ?', display: [a, ' \u2212 ', b, ' = ', '?'], answer: answer, op: 'subtraction', hint: 'Take ' + b + ' away from ' + a };
+    } else {
+      const maxN = diff === 'easy' ? 20 : diff === 'medium' ? 50 : 99;
+      const answer = randInt(diff === 'easy' ? 2 : 10, maxN);
+      const a = randInt(1, answer - 1);
+      const b = answer - a;
+      const pos = randInt(0, 2);
+      if (pos === 0) return { text: '? + ' + b + ' = ' + answer, display: ['?', ' + ', b, ' = ', answer], answer: a, op: 'addition', hint: 'What plus ' + b + ' makes ' + answer + '?' };
+      if (pos === 1) return { text: a + ' + ? = ' + answer, display: [a, ' + ', '?', ' = ', answer], answer: b, op: 'addition', hint: answer + ' \u2212 ' + a + ' = ?' };
+      return { text: a + ' + ' + b + ' = ?', display: [a, ' + ', b, ' = ', '?'], answer: answer, op: 'addition', hint: 'Add ' + a + ' and ' + b };
+    }
+  }
+
+  function genMulDiv(diff, weak) {
+    const preferDiv = weak.includes('division');
+    const useDiv = preferDiv ? Math.random() < 0.65 : Math.random() < 0.45;
+
+    const maxTable = diff === 'easy' ? 5 : diff === 'medium' ? 8 : 10;
+    const a = randInt(2, maxTable);
+    const b = randInt(2, diff === 'easy' ? 6 : 10);
+    const product = a * b;
+
+    if (useDiv) {
+      const pos = randInt(0, 1);
+      if (pos === 0) return { text: product + ' \u00F7 ? = ' + b, display: [product, ' \u00F7 ', '?', ' = ', b], answer: a, op: 'division', hint: 'What times ' + b + ' = ' + product + '?' };
+      return { text: product + ' \u00F7 ' + a + ' = ?', display: [product, ' \u00F7 ', a, ' = ', '?'], answer: b, op: 'division', hint: 'How many times does ' + a + ' go into ' + product + '?' };
+    } else {
+      const pos = randInt(0, 2);
+      if (pos === 0) return { text: '? \u00D7 ' + b + ' = ' + product, display: ['?', ' \u00D7 ', b, ' = ', product], answer: a, op: 'multiplication', hint: 'What times ' + b + ' equals ' + product + '?' };
+      if (pos === 1) return { text: a + ' \u00D7 ? = ' + product, display: [a, ' \u00D7 ', '?', ' = ', product], answer: b, op: 'multiplication', hint: a + ' times what equals ' + product + '?' };
+      return { text: a + ' \u00D7 ' + b + ' = ?', display: [a, ' \u00D7 ', b, ' = ', '?'], answer: product, op: 'multiplication', hint: 'Multiply ' + a + ' by ' + b };
+    }
+  }
+
+  function genMixed(diff, weak) {
+    if (diff === 'hard' || (diff === 'medium' && Math.random() < 0.4)) {
+      // Two-step: a * ? + c = result  OR  a + ? * b = result (interpreted left to right for kids, but we show with standard precedence)
+      const a = randInt(2, 6);
+      const x = randInt(2, 8);
+      const c = randInt(1, 10);
+      const result = a * x + c;
+      const pos = randInt(0, 1);
+      if (pos === 0) {
+        return { text: a + ' \u00D7 ? + ' + c + ' = ' + result, display: [a, ' \u00D7 ', '?', ' + ', c, ' = ', result], answer: x, op: 'mixed', hint: a + ' \u00D7 ? = ' + (result - c) + ', so ? = ' + (result - c) + ' \u00F7 ' + a };
+      } else {
+        const b = randInt(2, 5);
+        const y = randInt(2, 8);
+        const d = randInt(1, 15);
+        const res = d + b * y;
+        return { text: d + ' + ' + b + ' \u00D7 ? = ' + res, display: [d, ' + ', b, ' \u00D7 ', '?', ' = ', res], answer: y, op: 'mixed', hint: b + ' \u00D7 ? = ' + (res - d) };
+      }
+    }
+    // Simple mixed: randomly pick an operation
+    if (Math.random() < 0.5) return genAddSub(diff, weak);
+    return genMulDiv(diff, weak);
+  }
+
+  // ── Grid / map generation ──
+  function buildGrid() {
+    grid = [];
+    for (let r = 0; r < GRID; r++) {
+      grid[r] = [];
+      for (let c = 0; c < GRID; c++) {
+        grid[r][c] = {
+          r, c,
+          explored: false,
+          solved: false,
+          reachable: false,
+          isTreasure: (r === GRID - 1 && c === GRID - 1),
+          isStart: (r === 0 && c === 0),
+          connections: [] // { dir, targetR, targetC }
+        };
+      }
+    }
+    // Build connected paths using a spanning tree + extra edges
+    const visited = new Set();
+    const stack = [[0, 0]];
+    visited.add('0,0');
+    const dirs = [
+      { dr: 0, dc: 1, name: 'right' },
+      { dr: 0, dc: -1, name: 'left' },
+      { dr: 1, dc: 0, name: 'down' },
+      { dr: -1, dc: 0, name: 'up' }
+    ];
+
+    // DFS maze generation
+    while (stack.length > 0) {
+      const [cr, cc] = stack[stack.length - 1];
+      const neighbors = [];
+      for (const d of dirs) {
+        const nr = cr + d.dr, nc = cc + d.dc;
+        if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && !visited.has(nr + ',' + nc)) {
+          neighbors.push({ nr, nc, d });
+        }
+      }
+      if (neighbors.length === 0) {
+        stack.pop();
+        continue;
+      }
+      const pick = neighbors[randInt(0, neighbors.length - 1)];
+      visited.add(pick.nr + ',' + pick.nc);
+      addConnection(cr, cc, pick.nr, pick.nc);
+      stack.push([pick.nr, pick.nc]);
+    }
+
+    // Add a few extra connections for multiple paths
+    for (let i = 0; i < 4; i++) {
+      const r = randInt(0, GRID - 2);
+      const c = randInt(0, GRID - 2);
+      const goRight = Math.random() < 0.5;
+      if (goRight) {
+        if (!hasConnection(r, c, r, c + 1)) addConnection(r, c, r, c + 1);
+      } else {
+        if (!hasConnection(r, c, r + 1, c)) addConnection(r, c, r + 1, c);
+      }
+    }
+
+    grid[0][0].explored = true;
+    grid[0][0].solved = true;
+    updateReachable();
+  }
+
+  function addConnection(r1, c1, r2, c2) {
+    grid[r1][c1].connections.push({ r: r2, c: c2 });
+    grid[r2][c2].connections.push({ r: r1, c: c1 });
+  }
+
+  function hasConnection(r1, c1, r2, c2) {
+    return grid[r1][c1].connections.some(cn => cn.r === r2 && cn.c === c2);
+  }
+
+  function updateReachable() {
+    for (let r = 0; r < GRID; r++)
+      for (let c = 0; c < GRID; c++)
+        grid[r][c].reachable = false;
+
+    // BFS from player position through explored cells
+    const q = [{ r: playerPos.r, c: playerPos.c }];
+    const seen = new Set();
+    seen.add(playerPos.r + ',' + playerPos.c);
+    while (q.length > 0) {
+      const cur = q.shift();
+      const cell = grid[cur.r][cur.c];
+      for (const cn of cell.connections) {
+        const key = cn.r + ',' + cn.c;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        grid[cn.r][cn.c].reachable = true;
+        if (grid[cn.r][cn.c].solved) {
+          q.push({ r: cn.r, c: cn.c });
+        }
+      }
+    }
+  }
+
+  // ── Canvas drawing ──
+  const dungeonCanvas = $('dungeon-canvas');
+  const dctx = dungeonCanvas.getContext('2d');
+
+  function resizeMap() {
+    const maxW = Math.min(window.innerWidth - 40, 520);
+    const scale = Math.min(1, maxW / MAP_SIZE);
+    dungeonCanvas.width = MAP_SIZE;
+    dungeonCanvas.height = MAP_SIZE;
+    dungeonCanvas.style.width = (MAP_SIZE * scale) + 'px';
+    dungeonCanvas.style.height = (MAP_SIZE * scale) + 'px';
+  }
+
+  function cellCenter(r, c) {
+    return {
+      x: MAP_PAD + c * (CELL + GAP) + CELL / 2,
+      y: MAP_PAD + r * (CELL + GAP) + CELL / 2
+    };
+  }
+
+  function drawMap() {
+    torchFlicker = Math.sin(Date.now() / 400) * 0.04 + Math.sin(Date.now() / 170) * 0.02;
+    const ctx = dctx;
+    ctx.clearRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+    // Background
+    ctx.fillStyle = '#0c0c1e';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, MAP_SIZE, MAP_SIZE, 12);
+    ctx.fill();
+
+    // Draw connections (corridors)
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = grid[r][c];
+        const p1 = cellCenter(r, c);
+        for (const cn of cell.connections) {
+          if (cn.r < r || (cn.r === r && cn.c < c)) continue; // draw once
+          const p2 = cellCenter(cn.r, cn.c);
+          const bothExplored = cell.explored && grid[cn.r][cn.c].explored;
+          ctx.strokeStyle = bothExplored ? 'rgba(120,130,160,0.35)' : 'rgba(60,65,80,0.25)';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw rooms
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = grid[r][c];
+        const cx = MAP_PAD + c * (CELL + GAP);
+        const cy = MAP_PAD + r * (CELL + GAP);
+        const isPlayer = (r === playerPos.r && c === playerPos.c);
+
+        let bgColor, borderColor;
+        if (isPlayer) {
+          const flick = 0.85 + torchFlicker;
+          bgColor = 'rgba(255,211,42,' + (0.18 * flick) + ')';
+          borderColor = 'rgba(255,211,42,' + (0.8 * flick) + ')';
+        } else if (cell.solved) {
+          bgColor = 'rgba(123,237,159,0.1)';
+          borderColor = 'rgba(123,237,159,0.35)';
+        } else if (cell.reachable) {
+          bgColor = 'rgba(150,160,200,0.1)';
+          borderColor = 'rgba(150,160,200,0.4)';
+        } else if (cell.explored) {
+          bgColor = 'rgba(100,110,130,0.08)';
+          borderColor = 'rgba(100,110,130,0.2)';
+        } else {
+          bgColor = 'rgba(30,30,50,0.5)';
+          borderColor = 'rgba(50,50,70,0.3)';
+        }
+
+        ctx.fillStyle = bgColor;
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = isPlayer ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.roundRect(cx, cy, CELL, CELL, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Glow for player room
+        if (isPlayer) {
+          const grad = ctx.createRadialGradient(cx + CELL/2, cy + CELL/2, 5, cx + CELL/2, cy + CELL/2, CELL);
+          grad.addColorStop(0, 'rgba(255,211,42,0.15)');
+          grad.addColorStop(1, 'rgba(255,211,42,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(cx - 10, cy - 10, CELL + 20, CELL + 20, 14);
+          ctx.fill();
+        }
+
+        // Icons
+        const pcx = cx + CELL / 2;
+        const pcy = cy + CELL / 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (cell.isTreasure) {
+          ctx.font = '24px sans-serif';
+          ctx.fillText(cell.solved ? '\u{1F4AB}' : '\u{1F512}', pcx, pcy - 2);
+          ctx.font = 'bold 9px sans-serif';
+          ctx.fillStyle = '#ffd32a';
+          ctx.fillText('TREASURE', pcx, pcy + 20);
+        } else if (cell.isStart) {
+          ctx.font = '22px sans-serif';
+          ctx.fillText('\u{1F6AA}', pcx, pcy);
+        } else if (cell.solved) {
+          ctx.font = '18px sans-serif';
+          ctx.fillText('\u2705', pcx, pcy);
+        } else if (cell.reachable) {
+          ctx.font = '18px sans-serif';
+          ctx.fillText('\u{1F512}', pcx, pcy);
+        } else {
+          ctx.font = '14px sans-serif';
+          ctx.fillStyle = 'rgba(100,110,130,0.4)';
+          ctx.fillText('\u2022', pcx, pcy);
+        }
+
+        // Player character
+        if (isPlayer) {
+          ctx.font = '20px sans-serif';
+          ctx.fillText('\u{1F9D9}', pcx, pcy - (cell.isStart ? 0 : 22));
+        }
+      }
+    }
+  }
+
+  // ── Particle system ──
+  const pCanvas = $('particle-canvas');
+  const pctx = pCanvas.getContext('2d');
+
+  function resizeParticles() {
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+  }
+
+  function spawnParticles(x, y, count, color, spread) {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: x + (Math.random() - 0.5) * spread,
+        y: y + (Math.random() - 0.5) * spread,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4 - 2,
+        life: 1,
+        decay: 0.015 + Math.random() * 0.02,
+        size: 2 + Math.random() * 4,
+        color: color
+      });
+    }
+  }
+
+  function spawnDoorParticles() {
+    const rect = $('equation-panel').getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    spawnParticles(cx, cy, 40, '#ffd32a', 120);
+    spawnParticles(cx, cy, 20, '#7bed9f', 80);
+  }
+
+  function spawnTreasureParticles() {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        spawnParticles(cx, cy, 50, '#ffd32a', 200);
+        spawnParticles(cx, cy, 30, '#ff9f43', 150);
+        spawnParticles(cx, cy, 20, '#ff6b6b', 100);
+      }, i * 200);
+    }
+  }
+
+  function updateParticles() {
+    pctx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.life -= p.decay;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      pctx.globalAlpha = p.life;
+      pctx.fillStyle = p.color;
+      pctx.beginPath();
+      pctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      pctx.fill();
+    }
+    pctx.globalAlpha = 1;
+  }
+
+  // ── Game loop ──
+  function gameLoop() {
+    updateParticles();
+    if ($('game-screen').classList.contains('active')) {
+      drawMap();
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ── Title screen ──
+  function renderTitleScreen() {
+    showScreen('title-screen');
+    const sel = $('dungeon-select');
+    sel.textContent = '';
+
+    DUNGEON_DEFS.forEach((d, i) => {
+      const card = document.createElement('div');
+      card.className = 'dungeon-card';
+      const locked = i > 0 && !progress.completed[i - 1];
+      if (locked) card.classList.add('locked');
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'icon';
+      iconDiv.textContent = d.icon;
+      card.appendChild(iconDiv);
+
+      const h3 = document.createElement('h3');
+      h3.textContent = d.name;
+      card.appendChild(h3);
+
+      const p = document.createElement('p');
+      p.textContent = d.desc;
+      card.appendChild(p);
+
+      if (locked) {
+        const lock = document.createElement('div');
+        lock.className = 'lock-label';
+        lock.textContent = '\u{1F512} Complete previous dungeon';
+        card.appendChild(lock);
+      } else if (progress.completed[i]) {
+        const comp = document.createElement('div');
+        comp.className = 'complete-label';
+        comp.textContent = '\u2705 Completed';
+        card.appendChild(comp);
+      }
+
+      if (!locked) {
+        card.addEventListener('click', () => startDungeon(i));
+      }
+
+      sel.appendChild(card);
+    });
+
+    // Treasures
+    const tDisp = $('treasures-display');
+    tDisp.textContent = '';
+    for (let i = 0; i < 3; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'treasure-slot' + (progress.treasures[i] ? '' : ' empty');
+      slot.textContent = progress.treasures[i] || '?';
+      tDisp.appendChild(slot);
+    }
+  }
+
+  // ── Start dungeon ──
+  function startDungeon(id) {
+    currentDungeon = id;
+    score = 0;
+    roomsSolved = 0;
+    wrongAttempts = 0;
+    totalAttempts = 0;
+    playerPos = { r: 0, c: 0 };
+    pathFromStart = [{ r: 0, c: 0 }];
+    buildGrid();
+    resizeMap();
+
+    $('hud-level').textContent = DUNGEON_DEFS[id].icon + ' ' + DUNGEON_DEFS[id].name;
+    $('hud-score').textContent = '\u2B50 0';
+    updateHudRoom();
+
+    showScreen('game-screen');
+    showPathChoice();
+  }
+
+  function updateHudRoom() {
+    $('hud-room').textContent = 'Room ' + (roomsSolved + 1) + ' / ' + (GRID * 2 - 1);
+  }
+
+  // ── Path choice: show adjacent unsolved rooms ──
+  function showPathChoice() {
+    $('equation-panel').style.display = 'none';
+    $('path-choice-container').style.display = 'block';
+    const container = $('path-choice');
+    container.textContent = '';
+
+    const cell = grid[playerPos.r][playerPos.c];
+    const neighbors = cell.connections.filter(cn => !grid[cn.r][cn.c].solved);
+
+    if (neighbors.length === 0) {
+      // All neighbors solved, allow movement to any solved neighbor
+      const solvedNeighbors = cell.connections.filter(cn => grid[cn.r][cn.c].solved);
+      if (solvedNeighbors.length > 0) {
+        for (const nb of solvedNeighbors) {
+          const btn = document.createElement('button');
+          btn.className = 'path-btn easy';
+          const label = document.createElement('div');
+          label.textContent = grid[nb.r][nb.c].isTreasure ? '\u{1F3C6} Treasure Room' : 'Move to (' + (nb.r + 1) + ',' + (nb.c + 1) + ')';
+          btn.appendChild(label);
+          btn.addEventListener('click', () => {
+            playerPos = { r: nb.r, c: nb.c };
+            pathFromStart.push({ r: nb.r, c: nb.c });
+            updateReachable();
+            showPathChoice();
+          });
+          container.appendChild(btn);
+        }
+      }
+      return;
+    }
+
+    const difficulties = ['easy', 'medium', 'hard'];
+    const diffLabels = ['\u{1F7E2} Easy', '\u{1F7E0} Medium', '\u{1F534} Hard'];
+    const pointValues = [10, 20, 35];
+
+    // Assign difficulties to paths
+    neighbors.forEach((nb, i) => {
+      const diffIdx = Math.min(i, 2);
+      const diff = difficulties[diffIdx];
+      const btn = document.createElement('button');
+      btn.className = 'path-btn ' + diff;
+
+      const label = document.createElement('div');
+      label.textContent = diffLabels[diffIdx];
+      btn.appendChild(label);
+
+      const pts = document.createElement('div');
+      pts.className = 'pts';
+      pts.textContent = '+' + pointValues[diffIdx] + ' pts';
+      btn.appendChild(pts);
+
+      btn.addEventListener('click', () => {
+        currentDifficulty = diff;
+        playerPos = { r: nb.r, c: nb.c };
+        pathFromStart.push({ r: nb.r, c: nb.c });
+        grid[nb.r][nb.c].explored = true;
+        updateReachable();
+        presentEquation(diff, pointValues[diffIdx]);
+      });
+
+      container.appendChild(btn);
+    });
+  }
+
+  // ── Present equation ──
+  function presentEquation(difficulty, points) {
+    $('path-choice-container').style.display = 'none';
+    $('equation-panel').style.display = '';
+
+    currentEquation = generateEquation(currentDungeon, difficulty);
+    currentEquation.points = points;
+
+    const tag = $('difficulty-tag');
+    tag.className = 'difficulty-tag ' + difficulty;
+    tag.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+
+    renderEquationText();
+
+    const input = $('answer-input');
+    input.value = '';
+    input.focus();
+
+    const fb = $('feedback');
+    fb.textContent = '';
+    fb.className = 'feedback';
+  }
+
+  function renderEquationText() {
+    const container = $('equation-text');
+    container.textContent = '';
+    for (const part of currentEquation.display) {
+      if (part === '?') {
+        const span = document.createElement('span');
+        span.className = 'missing';
+        span.textContent = '?';
+        container.appendChild(span);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = String(part);
+        container.appendChild(span);
+      }
+    }
+  }
+
+  function checkAnswer() {
+    if (animatingDoor) return;
+    const input = $('answer-input');
+    const val = parseInt(input.value, 10);
+    const fb = $('feedback');
+
+    if (isNaN(val)) {
+      fb.textContent = 'Type a number!';
+      fb.className = 'feedback wrong';
+      return;
+    }
+
+    totalAttempts++;
+
+    if (val === currentEquation.answer) {
+      // Correct!
+      animatingDoor = true;
+      fb.textContent = '\u2705 Correct! Door unlocked!';
+      fb.className = 'feedback correct';
+      recordOpResult(currentEquation.op, true);
+      score += currentEquation.points;
+      roomsSolved++;
+      $('hud-score').textContent = '\u2B50 ' + score;
+      updateHudRoom();
+
+      // Update missing number display
+      const missing = $('equation-text').querySelector('.missing');
+      if (missing) {
+        missing.textContent = String(currentEquation.answer);
+        missing.classList.add('filled');
+      }
+
+      spawnDoorParticles();
+
+      grid[playerPos.r][playerPos.c].solved = true;
+      updateReachable();
+
+      setTimeout(() => {
+        animatingDoor = false;
+        if (grid[playerPos.r][playerPos.c].isTreasure) {
+          dungeonComplete();
+        } else {
+          showPathChoice();
+        }
+      }, 1200);
+    } else {
+      // Wrong
+      wrongAttempts++;
+      recordOpResult(currentEquation.op, false);
+
+      if (wrongAttempts % 2 === 0) {
+        fb.textContent = '\u274C Try again! Hint: ' + currentEquation.hint;
+        fb.className = 'feedback hint';
+      } else {
+        fb.textContent = '\u274C Not quite. Try again!';
+        fb.className = 'feedback wrong';
+      }
+      input.value = '';
+      input.focus();
+
+      // Shake animation
+      $('equation-panel').style.animation = 'none';
+      void $('equation-panel').offsetHeight;
+      $('equation-panel').style.animation = 'shake 0.4s ease';
+    }
+  }
+
+  // Add shake keyframes dynamically
+  (function() {
+    const style = document.createElement('style');
+    style.textContent = '@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }';
+    document.head.appendChild(style);
+  })();
+
+  // ── Dungeon complete ──
+  function dungeonComplete() {
+    progress.completed[currentDungeon] = true;
+    progress.treasures[currentDungeon] = TREASURES[currentDungeon];
+    saveProgress();
+
+    spawnTreasureParticles();
+
+    $('victory-title').textContent = DUNGEON_DEFS[currentDungeon].name + ' Cleared!';
+    $('treasure-reveal').textContent = TREASURES[currentDungeon];
+
+    const stats = $('victory-stats');
+    stats.textContent = '';
+    const lines = [
+      'Treasure: ' + TREASURE_NAMES[currentDungeon],
+      'Score: ' + score + ' points',
+      'Rooms solved: ' + roomsSolved,
+      'Attempts: ' + totalAttempts,
+      'Accuracy: ' + (totalAttempts > 0 ? Math.round(((totalAttempts - wrongAttempts) / totalAttempts) * 100) : 100) + '%'
+    ];
+    for (const line of lines) {
+      const div = document.createElement('div');
+      div.textContent = line;
+      stats.appendChild(div);
+    }
+
+    const nextBtn = $('btn-next-dungeon');
+    if (currentDungeon < 2) {
+      nextBtn.style.display = '';
+      nextBtn.textContent = 'Next: ' + DUNGEON_DEFS[currentDungeon + 1].name;
+    } else {
+      nextBtn.style.display = 'none';
+    }
+
+    showScreen('victory-screen');
+  }
+
+  // ── Event listeners ──
+  $('submit-btn').addEventListener('click', checkAnswer);
+  $('answer-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkAnswer();
+  });
+  $('btn-next-dungeon').addEventListener('click', function() {
+    if (currentDungeon < 2) startDungeon(currentDungeon + 1);
+  });
+  $('btn-back-menu').addEventListener('click', renderTitleScreen);
+
+  // Map click to move to solved rooms
+  dungeonCanvas.addEventListener('click', function(e) {
+    if ($('equation-panel').style.display !== 'none') return;
+    const rect = dungeonCanvas.getBoundingClientRect();
+    const scaleX = MAP_SIZE / rect.width;
+    const scaleY = MAP_SIZE / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cx = MAP_PAD + c * (CELL + GAP);
+        const cy = MAP_PAD + r * (CELL + GAP);
+        if (mx >= cx && mx <= cx + CELL && my >= cy && my <= cy + CELL) {
+          if (grid[r][c].solved && (r !== playerPos.r || c !== playerPos.c)) {
+            // Check if this room is connected to current position through solved rooms
+            if (canReachSolved(playerPos.r, playerPos.c, r, c)) {
+              playerPos = { r, c };
+              pathFromStart.push({ r, c });
+              updateReachable();
+              showPathChoice();
+            }
+          }
+          return;
+        }
+      }
+    }
+  });
+
+  function canReachSolved(fromR, fromC, toR, toC) {
+    const visited = new Set();
+    const q = [fromR + ',' + fromC];
+    visited.add(fromR + ',' + fromC);
+    while (q.length > 0) {
+      const key = q.shift();
+      const [cr, cc] = key.split(',').map(Number);
+      if (cr === toR && cc === toC) return true;
+      for (const cn of grid[cr][cc].connections) {
+        const nk = cn.r + ',' + cn.c;
+        if (!visited.has(nk) && grid[cn.r][cn.c].solved) {
+          visited.add(nk);
+          q.push(nk);
+        }
+      }
+    }
+    return false;
+  }
+
+  // ── Resize ──
+  window.addEventListener('resize', function() {
+    resizeParticles();
+    if ($('game-screen').classList.contains('active')) resizeMap();
+  });
+
+  // ── Init ──
+  resizeParticles();
+  renderTitleScreen();
+  requestAnimationFrame(gameLoop);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Potion Mixer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-60px) scale(0.3); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes sparkle {
+  0% { transform: translate(0,0) scale(0); opacity: 1; }
+  50% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
+}
+
+@keyframes pour {
+  0% { transform: rotate(0deg) translateY(0); }
+  30% { transform: rotate(-45deg) translateY(-20px); }
+  70% { transform: rotate(-45deg) translateY(-20px); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+
+@keyframes cauldronGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px var(--glow-color)); }
+  50% { filter: drop-shadow(0 0 20px var(--glow-color)); }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+body {
+  background: linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 40%, #1a1a3e 100%);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  overflow-x: hidden;
+}
+
+.bg-stars {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  animation: float 3s ease-in-out infinite;
+}
+
+.header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 16px 20px 8px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.header h1 {
+  font-size: 32px;
+  background: linear-gradient(135deg, #c084fc, #67e8f9, #fbbf24);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+.back-link {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.back-link:hover { color: #c084fc; }
+
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c4b5fd;
+}
+.stats-bar span { display: flex; align-items: center; gap: 4px; }
+
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  z-index: 10;
+  flex-direction: column;
+  align-items: center;
+}
+.screen.active { display: flex; }
+
+.level-select {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  width: 100%;
+  padding: 20px;
+}
+
+.level-card {
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(192, 132, 252, 0.2);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.level-card:hover {
+  transform: translateY(-4px);
+  background: rgba(192, 132, 252, 0.12);
+  border-color: rgba(192, 132, 252, 0.5);
+}
+.level-card.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.level-card.locked:hover {
+  transform: none;
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(192, 132, 252, 0.2);
+}
+
+.level-card .level-icon { font-size: 40px; margin-bottom: 8px; }
+.level-card h3 { font-size: 18px; color: #e0d4ff; margin-bottom: 4px; }
+.level-card p { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.4; }
+.level-card .progress-dots { margin-top: 10px; display: flex; justify-content: center; gap: 4px; }
+.level-card .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.2s;
+}
+.level-card .dot.done { background: #a78bfa; }
+
+.workshop {
+  width: 100%;
+  padding: 10px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.potion-info {
+  text-align: center;
+  animation: slideIn 0.4s ease-out;
+}
+
+.potion-name {
+  font-size: 22px;
+  color: #fbbf24;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.target-display {
+  font-size: 18px;
+  color: #c4b5fd;
+}
+
+.target-number {
+  font-size: 28px;
+  font-weight: 800;
+  color: #67e8f9;
+}
+
+.operation-hint {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+
+.cauldron-area {
+  position: relative;
+  width: 260px;
+  height: 220px;
+  margin: 0 auto;
+}
+
+.cauldron-svg {
+  width: 100%;
+  height: 100%;
+  --glow-color: #a78bfa;
+  animation: cauldronGlow 3s ease-in-out infinite;
+}
+
+.running-total {
+  position: absolute;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 42px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(167, 139, 250, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(167,139,250,0.2));
+  animation: bubbleRise 2s ease-in infinite;
+  pointer-events: none;
+}
+
+.shelves {
+  width: 100%;
+  max-width: 700px;
+  padding: 8px;
+}
+
+.shelf-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ingredient {
+  position: relative;
+  width: 80px;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: slideIn 0.4s ease-out both;
+}
+.ingredient:nth-child(2) { animation-delay: 0.05s; }
+.ingredient:nth-child(3) { animation-delay: 0.1s; }
+.ingredient:nth-child(4) { animation-delay: 0.15s; }
+.ingredient:nth-child(5) { animation-delay: 0.2s; }
+.ingredient:nth-child(6) { animation-delay: 0.25s; }
+.ingredient:nth-child(7) { animation-delay: 0.3s; }
+.ingredient:nth-child(8) { animation-delay: 0.35s; }
+
+.ingredient:hover { transform: scale(1.1) translateY(-4px); }
+.ingredient:active { transform: scale(0.95); }
+
+.ingredient.used {
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scale(0.9);
+}
+
+.ingredient.pouring {
+  animation: pour 0.8s ease-in-out;
+  pointer-events: none;
+}
+
+.ingredient svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.ingredient .ing-number {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+.ingredient .ing-op {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+  font-size: 16px;
+  font-weight: 900;
+  pointer-events: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: none;
+}
+.ing-op.add { background: #22c55e; color: #fff; }
+.ing-op.sub { background: #ef4444; color: #fff; }
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn {
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-undo {
+  background: linear-gradient(135deg, #475569, #64748b);
+}
+
+.btn-reset {
+  background: linear-gradient(135deg, #dc2626, #f87171);
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.stars-display {
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+}
+.stars-display .earned { color: #fbbf24; }
+
+.potion-progress {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.potion-pip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+.potion-pip.done {
+  background: linear-gradient(135deg, #7c3aed, #c084fc);
+  border-color: #c084fc;
+}
+.potion-pip.current {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.success-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.success-overlay.active { display: flex; }
+
+.success-card {
+  background: linear-gradient(135deg, #2d1b4e, #1a1a3e);
+  border: 2px solid #c084fc;
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  animation: slideIn 0.4s ease-out;
+  max-width: 380px;
+}
+
+.success-card h2 {
+  font-size: 28px;
+  color: #fbbf24;
+  margin-bottom: 8px;
+}
+
+.success-card .potion-result {
+  font-size: 60px;
+  margin: 12px 0;
+}
+
+.success-card .stars-result {
+  font-size: 36px;
+  letter-spacing: 4px;
+  margin: 12px 0;
+}
+
+.success-card p {
+  color: #c4b5fd;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.level-complete-card {
+  background: linear-gradient(135deg, #2d1b4e, #1a1a3e);
+  border: 2px solid #fbbf24;
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  animation: slideIn 0.4s ease-out;
+  max-width: 420px;
+}
+
+.level-complete-card h2 {
+  font-size: 32px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+.level-complete-card .trophy { font-size: 72px; margin: 16px 0; }
+
+.potions-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.potion-summary-item {
+  text-align: center;
+  font-size: 12px;
+  color: #c4b5fd;
+}
+.potion-summary-item .icon { font-size: 28px; }
+
+.particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.particle {
+  position: absolute;
+  pointer-events: none;
+  animation: sparkle 0.8s ease-out forwards;
+}
+
+@media (max-width: 600px) {
+  .header h1 { font-size: 24px; }
+  .ingredient { width: 65px; }
+  .ingredient .ing-number { font-size: 17px; }
+  .cauldron-area { width: 200px; height: 180px; }
+  .running-total { font-size: 32px; top: 55px; }
+  .level-select { grid-template-columns: repeat(2, 1fr); padding: 12px; }
+  .success-card, .level-complete-card { padding: 28px 24px; margin: 0 16px; }
+  .potions-summary { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+<div class="particles" id="particles"></div>
+
+<div class="header">
+  <a href="../" class="back-link">&#8592; All Games</a>
+  <h1>Potion Mixer</h1>
+  <div class="stats-bar" id="statsBar">
+    <span id="statLevel"></span>
+    <span id="statPotion"></span>
+    <span id="statStars"></span>
+  </div>
+</div>
+
+<div class="screen active" id="levelSelectScreen">
+  <div class="level-select" id="levelSelect"></div>
+</div>
+
+<div class="screen" id="gameScreen">
+  <div class="workshop">
+    <div class="potion-info">
+      <div class="potion-name" id="potionName"></div>
+      <div class="target-display">Make <span class="target-number" id="targetNumber"></span></div>
+      <div class="operation-hint" id="operationHint"></div>
+    </div>
+
+    <div class="potion-progress" id="potionProgress"></div>
+
+    <div class="cauldron-area" id="cauldronArea">
+      <svg class="cauldron-svg" viewBox="0 0 260 220" id="cauldronSvg">
+        <defs>
+          <linearGradient id="cauldronShine" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="80" cy="205" rx="14" ry="6" fill="#2d1b4e"/>
+        <ellipse cx="180" cy="205" rx="14" ry="6" fill="#2d1b4e"/>
+        <rect x="74" y="185" width="12" height="22" rx="4" fill="#4a3560"/>
+        <rect x="174" y="185" width="12" height="22" rx="4" fill="#4a3560"/>
+        <ellipse cx="130" cy="185" rx="88" ry="18" fill="#3a2550"/>
+        <path d="M42,110 Q42,190 130,190 Q218,190 218,110 Z" fill="#4a3560"/>
+        <path d="M42,110 Q42,190 130,190 Q218,190 218,110 Z" fill="url(#cauldronShine)" opacity="0.3"/>
+        <ellipse cx="130" cy="110" rx="92" ry="22" fill="#5a4570"/>
+        <ellipse cx="130" cy="110" rx="88" ry="18" fill="#3a2550"/>
+        <ellipse cx="130" cy="112" rx="82" ry="16" id="liquidSurface" fill="#7c3aed" opacity="0.85"/>
+        <path d="M38,120 Q20,120 20,140 Q20,160 42,158" stroke="#5a4570" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <path d="M222,120 Q240,120 240,140 Q240,160 218,158" stroke="#5a4570" stroke-width="8" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="running-total" id="runningTotal">0</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-undo btn-small" id="undoBtn" disabled>Undo</button>
+      <div class="stars-display" id="starsDisplay"></div>
+      <button class="btn btn-reset btn-small" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="shelves">
+      <div class="shelf-label">Tap an ingredient to add it to the cauldron!</div>
+      <div class="ingredients" id="ingredients"></div>
+    </div>
+  </div>
+</div>
+
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card" id="successCard"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var POTIONS_PER_LEVEL = 8;
+  var STORAGE_KEY = 'potionMixerProgress';
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  var POTION_NAMES = [
+    ['Sparkle Dew', 'Fairy Dust', 'Rainbow Mist', 'Pixie Pop', 'Starlight Fizz', 'Unicorn Tears', 'Bubble Bloom', 'Crystal Splash'],
+    ['Dragon\'s Breath', 'Phoenix Flame', 'Moonbeam Elixir', 'Thunder Brew', 'Mermaid Song', 'Cloud Walker', 'Comet Tail', 'Shadow Silk'],
+    ['Enchanted Storm', 'Wizard\'s Wisdom', 'Time Twister', 'Mystic Aurora', 'Void Essence', 'Astral Wave', 'Spirit Glow', 'Eclipse Nectar'],
+    ['Cosmic Fury', 'Galaxy Swirl', 'Nebula Burst', 'Supernova Splash', 'Black Hole Brew', 'Quantum Fizz', 'Infinity Potion', 'Arcane Supreme']
+  ];
+
+  var POTION_EMOJIS = [
+    '\u{1F9EA}', '\u2728', '\u{1F308}', '\u{1F984}', '\u2B50', '\u{1F52E}', '\u{1F48E}', '\u{1F319}',
+    '\u{1F409}', '\u{1F525}', '\u{1F30A}', '\u26A1', '\u{1F9DC}', '\u2601\uFE0F', '\u2604\uFE0F', '\u{1F578}\uFE0F',
+    '\u{1F32A}\uFE0F', '\u{1F9D9}', '\u231B', '\u{1F30C}', '\u{1F47B}', '\u{1F320}', '\u{1F441}\uFE0F', '\u{1F311}',
+    '\u{1F4AB}', '\u{1FA90}', '\u{1F4A5}', '\u2600\uFE0F', '\u{1F573}\uFE0F', '\u269B\uFE0F', '\u267E\uFE0F', '\u{1F3C6}'
+  ];
+
+  var POTION_COLORS = [
+    ['#f472b6','#c084fc','#67e8f9','#fbbf24','#a3e635','#fb923c','#818cf8','#f9a8d4'],
+    ['#ef4444','#f97316','#a78bfa','#3b82f6','#06b6d4','#e0e7ff','#facc15','#6366f1'],
+    ['#8b5cf6','#10b981','#ec4899','#14b8a6','#9333ea','#0ea5e9','#84cc16','#f43f5e'],
+    ['#6d28d9','#1d4ed8','#dc2626','#fbbf24','#1e1e1e','#06b6d4','#7c3aed','#f59e0b']
+  ];
+
+  var LEVEL_CONFIG = [
+    { name: 'Beginner Brews', icon: '\u{1F31F}', desc: 'Addition within 20', maxTarget: 20, ingredientCount: 5, pickCount: [2,3], ops: ['add'] },
+    { name: 'Apprentice Mixes', icon: '\u{1F525}', desc: 'Addition within 50', maxTarget: 50, ingredientCount: 6, pickCount: [3,4], ops: ['add'] },
+    { name: 'Expert Elixirs', icon: '\u{1F300}', desc: 'Add & subtract within 100', maxTarget: 100, ingredientCount: 7, pickCount: [3,5], ops: ['add','sub'] },
+    { name: 'Master Potions', icon: '\u{1F451}', desc: 'Mixed operations, bigger numbers', maxTarget: 150, ingredientCount: 8, pickCount: [4,6], ops: ['add','sub'] }
+  ];
+
+  // State
+  var state = {
+    currentLevel: 0,
+    currentPotion: 0,
+    runningTotal: 0,
+    pickedIngredients: [],
+    wrongPicks: 0,
+    ingredients: [],
+    target: 0,
+    progress: loadProgress(),
+    bubbleInterval: null,
+    currentLiquidColor: '#7c3aed'
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  function adjustColor(hex, amount) {
+    var r = parseInt(hex.slice(1,3), 16);
+    var g = parseInt(hex.slice(3,5), 16);
+    var b = parseInt(hex.slice(5,7), 16);
+    r = Math.max(0, Math.min(255, r + amount));
+    g = Math.max(0, Math.min(255, g + amount));
+    b = Math.max(0, Math.min(255, b + amount));
+    return '#' + [r,g,b].map(function(c) { return c.toString(16).padStart(2,'0'); }).join('');
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function lerpColor(c1, c2, t) {
+    var r1 = parseInt(c1.slice(1,3),16), g1 = parseInt(c1.slice(3,5),16), b1 = parseInt(c1.slice(5,7),16);
+    var r2 = parseInt(c2.slice(1,3),16), g2 = parseInt(c2.slice(3,5),16), b2 = parseInt(c2.slice(5,7),16);
+    var r = Math.round(lerp(r1,r2,t)), g = Math.round(lerp(g1,g2,t)), b = Math.round(lerp(b1,b2,t));
+    return '#' + [r,g,b].map(function(c) { return c.toString(16).padStart(2,'0'); }).join('');
+  }
+
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function loadProgress() {
+    try {
+      var d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (d && Array.isArray(d.levels)) return d;
+    } catch(e) { /* ignore */ }
+    return {
+      levels: [
+        { unlocked: true, potions: [0,0,0,0,0,0,0,0] },
+        { unlocked: false, potions: [0,0,0,0,0,0,0,0] },
+        { unlocked: false, potions: [0,0,0,0,0,0,0,0] },
+        { unlocked: false, potions: [0,0,0,0,0,0,0,0] }
+      ]
+    };
+  }
+
+  function saveProgress() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress)); } catch(e) { /* ignore */ }
+  }
+
+  // SVG helper: create an SVG element with attributes
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS(SVG_NS, tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function(k) { el.setAttribute(k, attrs[k]); });
+    }
+    return el;
+  }
+
+  // Build a bottle SVG using DOM methods
+  function buildBottleSvg(shapeIdx, color) {
+    var darker = adjustColor(color, -40);
+    var gradId = 'bg' + color.slice(1) + shapeIdx;
+
+    var svg = svgEl('svg', { viewBox: '0 0 80 110' });
+    var defs = svgEl('defs');
+    var grad = svgEl('linearGradient', { id: gradId, x1: '0', y1: '0', x2: '1', y2: '1' });
+    var stop1 = svgEl('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0.9' });
+    var stop2 = svgEl('stop', { offset: '100%', 'stop-color': darker, 'stop-opacity': '0.95' });
+    grad.appendChild(stop1);
+    grad.appendChild(stop2);
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    var fill = 'url(#' + gradId + ')';
+
+    if (shapeIdx === 0) {
+      // Round flask
+      svg.appendChild(svgEl('rect', { x:'30', y:'4', width:'20', height:'14', rx:'3', fill:'#8B7355' }));
+      svg.appendChild(svgEl('rect', { x:'28', y:'16', width:'24', height:'6', rx:'2', fill:'#A0926B' }));
+      svg.appendChild(svgEl('path', { d:'M28,22 L24,40 Q14,55 14,70 Q14,100 40,100 Q66,100 66,70 Q66,55 56,40 L52,22', fill: fill }));
+      svg.appendChild(svgEl('ellipse', { cx:'40', cy:'70', rx:'24', ry:'4', fill:'rgba(255,255,255,0.15)' }));
+      svg.appendChild(svgEl('path', { d:'M28,50 Q30,48 32,50', stroke:'rgba(255,255,255,0.3)', 'stroke-width':'2', fill:'none' }));
+    } else if (shapeIdx === 1) {
+      // Tall bottle
+      svg.appendChild(svgEl('rect', { x:'32', y:'2', width:'16', height:'12', rx:'3', fill:'#8B7355' }));
+      svg.appendChild(svgEl('rect', { x:'30', y:'12', width:'20', height:'6', rx:'2', fill:'#A0926B' }));
+      svg.appendChild(svgEl('path', { d:'M30,18 L28,35 L22,45 L22,95 Q22,104 40,104 Q58,104 58,95 L58,45 L52,35 L50,18', fill: fill }));
+      svg.appendChild(svgEl('rect', { x:'26', y:'60', width:'28', height:'1', fill:'rgba(255,255,255,0.15)' }));
+      svg.appendChild(svgEl('path', { d:'M30,45 Q32,43 34,45', stroke:'rgba(255,255,255,0.3)', 'stroke-width':'2', fill:'none' }));
+    } else if (shapeIdx === 2) {
+      // Wide jar
+      svg.appendChild(svgEl('rect', { x:'28', y:'4', width:'24', height:'10', rx:'4', fill:'#8B7355' }));
+      svg.appendChild(svgEl('rect', { x:'26', y:'12', width:'28', height:'6', rx:'2', fill:'#A0926B' }));
+      svg.appendChild(svgEl('rect', { x:'16', y:'18', width:'48', height:'76', rx:'14', fill: fill }));
+      svg.appendChild(svgEl('ellipse', { cx:'40', cy:'55', rx:'22', ry:'3', fill:'rgba(255,255,255,0.12)' }));
+      svg.appendChild(svgEl('path', { d:'M24,35 Q26,33 28,35', stroke:'rgba(255,255,255,0.3)', 'stroke-width':'2', fill:'none' }));
+    } else if (shapeIdx === 3) {
+      // Triangular flask
+      svg.appendChild(svgEl('rect', { x:'33', y:'2', width:'14', height:'14', rx:'3', fill:'#8B7355' }));
+      svg.appendChild(svgEl('rect', { x:'31', y:'14', width:'18', height:'5', rx:'2', fill:'#A0926B' }));
+      svg.appendChild(svgEl('path', { d:'M31,19 L32,45 L12,96 Q10,102 18,104 L62,104 Q70,102 68,96 L48,45 L49,19', fill: fill }));
+      svg.appendChild(svgEl('path', { d:'M34,40 Q36,38 38,40', stroke:'rgba(255,255,255,0.3)', 'stroke-width':'2', fill:'none' }));
+    } else {
+      // Potion vial
+      svg.appendChild(svgEl('rect', { x:'34', y:'2', width:'12', height:'18', rx:'3', fill:'#8B7355' }));
+      svg.appendChild(svgEl('rect', { x:'32', y:'18', width:'16', height:'5', rx:'2', fill:'#A0926B' }));
+      svg.appendChild(svgEl('path', { d:'M32,23 Q20,40 20,60 L20,80 Q20,104 40,104 Q60,104 60,80 L60,60 Q60,40 48,23', fill: fill }));
+      svg.appendChild(svgEl('ellipse', { cx:'40', cy:'72', rx:'18', ry:'3', fill:'rgba(255,255,255,0.12)' }));
+      svg.appendChild(svgEl('path', { d:'M30,48 Q32,46 34,48', stroke:'rgba(255,255,255,0.3)', 'stroke-width':'2', fill:'none' }));
+    }
+
+    return svg;
+  }
+
+  // Background stars
+  function createBgStars() {
+    var container = $('bgStars');
+    for (var i = 0; i < 60; i++) {
+      var star = document.createElement('div');
+      star.className = 'bg-star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      var sz = (1 + Math.random() * 3) + 'px';
+      star.style.width = sz;
+      star.style.height = sz;
+      star.style.animationDelay = (Math.random() * 5) + 's';
+      star.style.animationDuration = (2 + Math.random() * 4) + 's';
+      star.style.opacity = String(0.2 + Math.random() * 0.6);
+      container.appendChild(star);
+    }
+  }
+
+  // Cauldron bubbles
+  function startBubbles() {
+    stopBubbles();
+    state.bubbleInterval = setInterval(function() {
+      var area = $('cauldronArea');
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      var size = 4 + Math.random() * 10;
+      bubble.style.width = size + 'px';
+      bubble.style.height = size + 'px';
+      bubble.style.left = (80 + Math.random() * 100) + 'px';
+      bubble.style.top = '130px';
+      bubble.style.animationDuration = (1.2 + Math.random() * 1.5) + 's';
+      area.appendChild(bubble);
+      setTimeout(function() { if (bubble.parentNode) bubble.remove(); }, 3000);
+    }, 300);
+  }
+
+  function stopBubbles() {
+    if (state.bubbleInterval) { clearInterval(state.bubbleInterval); state.bubbleInterval = null; }
+  }
+
+  // Particles
+  function spawnParticles(x, y, count, colors) {
+    var container = $('particles');
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('div');
+      p.className = 'particle';
+      var angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5);
+      var dist = 40 + Math.random() * 80;
+      p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      var size = 4 + Math.random() * 8;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+      container.appendChild(p);
+      (function(el) {
+        setTimeout(function() { if (el.parentNode) el.remove(); }, 1200);
+      })(p);
+    }
+  }
+
+  function spawnStarParticles(x, y) {
+    var container = $('particles');
+    var symbols = ['\u2605', '\u2726', '\u2727', '\u2B50', '\u2728'];
+    for (var i = 0; i < 15; i++) {
+      var p = document.createElement('div');
+      p.className = 'particle';
+      var angle = (Math.PI * 2 / 15) * i;
+      var dist = 60 + Math.random() * 120;
+      p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      p.style.fontSize = (14 + Math.random() * 18) + 'px';
+      p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      p.style.animationDuration = (0.6 + Math.random() * 0.6) + 's';
+      container.appendChild(p);
+      (function(el) {
+        setTimeout(function() { if (el.parentNode) el.remove(); }, 1500);
+      })(p);
+    }
+  }
+
+  // Puzzle generation
+  function generatePuzzle(level) {
+    var cfg = LEVEL_CONFIG[level];
+    var hasSub = cfg.ops.indexOf('sub') >= 0;
+    var pickMin = cfg.pickCount[0];
+    var pickMax = cfg.pickCount[1];
+    var numPicks = rand(pickMin, pickMax);
+
+    var target, solution, ingredients;
+    var attempts = 0;
+
+    do {
+      attempts++;
+      solution = [];
+      var sum = 0;
+
+      for (var i = 0; i < numPicks; i++) {
+        var op = 'add';
+        if (hasSub && i > 0 && sum > 10 && Math.random() > 0.5) {
+          op = 'sub';
+        }
+
+        var maxVal;
+        if (level === 0) maxVal = 10;
+        else if (level === 1) maxVal = 20;
+        else if (level === 2) maxVal = 30;
+        else maxVal = 40;
+
+        var val;
+        if (op === 'sub') {
+          val = rand(1, Math.min(maxVal, sum - 1));
+          sum -= val;
+        } else {
+          val = rand(1, maxVal);
+          sum += val;
+        }
+        solution.push({ value: val, op: op });
+      }
+
+      target = sum;
+    } while (target <= 0 || target > cfg.maxTarget || attempts > 100);
+
+    ingredients = solution.map(function(s, i) {
+      return { value: s.value, op: s.op, isSolution: true, id: i };
+    });
+
+    var extraCount = cfg.ingredientCount - numPicks;
+    for (var j = 0; j < extraCount; j++) {
+      var eVal = rand(1, level === 0 ? 10 : level === 1 ? 20 : 30);
+      var eOp = hasSub && Math.random() > 0.6 ? 'sub' : 'add';
+      ingredients.push({ value: eVal, op: eOp, isSolution: false, id: numPicks + j });
+    }
+
+    // Shuffle
+    for (var k = ingredients.length - 1; k > 0; k--) {
+      var r = Math.floor(Math.random() * (k + 1));
+      var tmp = ingredients[k];
+      ingredients[k] = ingredients[r];
+      ingredients[r] = tmp;
+    }
+
+    // Assign visual properties
+    var colorPool = POTION_COLORS[level];
+    ingredients.forEach(function(ing, idx) {
+      ing.color = colorPool[idx % colorPool.length];
+      ing.shape = idx % 5;
+    });
+
+    return { target: target, ingredients: ingredients };
+  }
+
+  // Screen management
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    $(id).classList.add('active');
+  }
+
+  // Level select
+  function renderLevelSelect() {
+    showScreen('levelSelectScreen');
+    $('statsBar').style.display = 'none';
+    stopBubbles();
+
+    var container = $('levelSelect');
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    LEVEL_CONFIG.forEach(function(cfg, i) {
+      var card = document.createElement('div');
+      card.className = 'level-card';
+      var prog = state.progress.levels[i];
+      if (!prog.unlocked) card.classList.add('locked');
+
+      var icon = document.createElement('div');
+      icon.className = 'level-icon';
+      icon.textContent = cfg.icon;
+      card.appendChild(icon);
+
+      var h3 = document.createElement('h3');
+      h3.textContent = cfg.name;
+      card.appendChild(h3);
+
+      var p = document.createElement('p');
+      p.textContent = cfg.desc;
+      card.appendChild(p);
+
+      var dots = document.createElement('div');
+      dots.className = 'progress-dots';
+      for (var j = 0; j < POTIONS_PER_LEVEL; j++) {
+        var dot = document.createElement('div');
+        dot.className = 'dot';
+        if (prog.potions[j] > 0) dot.classList.add('done');
+        dots.appendChild(dot);
+      }
+      card.appendChild(dots);
+
+      if (!prog.unlocked) {
+        var lock = document.createElement('p');
+        lock.textContent = 'Complete previous level to unlock';
+        lock.style.marginTop = '8px';
+        lock.style.fontSize = '11px';
+        lock.style.color = 'rgba(255,255,255,0.3)';
+        card.appendChild(lock);
+      }
+
+      (function(idx) {
+        card.addEventListener('click', function() {
+          if (!state.progress.levels[idx].unlocked) return;
+          startLevel(idx);
+        });
+      })(i);
+
+      container.appendChild(card);
+    });
+  }
+
+  function startLevel(levelIdx) {
+    state.currentLevel = levelIdx;
+    var prog = state.progress.levels[levelIdx];
+    var start = 0;
+    for (var i = 0; i < POTIONS_PER_LEVEL; i++) {
+      if (prog.potions[i] === 0) { start = i; break; }
+      if (i === POTIONS_PER_LEVEL - 1) start = 0;
+    }
+    state.currentPotion = start;
+    startPotion();
+  }
+
+  function startPotion() {
+    showScreen('gameScreen');
+    $('statsBar').style.display = 'flex';
+    startBubbles();
+
+    var lvl = state.currentLevel;
+    var pot = state.currentPotion;
+    var puzzle = generatePuzzle(lvl);
+
+    state.target = puzzle.target;
+    state.ingredients = puzzle.ingredients;
+    state.runningTotal = 0;
+    state.pickedIngredients = [];
+    state.wrongPicks = 0;
+    state.currentLiquidColor = '#7c3aed';
+
+    $('potionName').textContent = POTION_NAMES[lvl][pot];
+    $('targetNumber').textContent = String(state.target);
+    $('runningTotal').textContent = '0';
+
+    var cfg = LEVEL_CONFIG[lvl];
+    if (cfg.ops.indexOf('sub') >= 0) {
+      $('operationHint').textContent = 'Some ingredients add (+), some subtract (\u2212)!';
+    } else {
+      $('operationHint').textContent = 'Add ingredients to reach the target!';
+    }
+
+    updateStats();
+    renderPotionProgress();
+    renderIngredients();
+    renderStars();
+    updateLiquid();
+
+    $('undoBtn').disabled = true;
+  }
+
+  function updateStats() {
+    $('statLevel').textContent = 'Level ' + (state.currentLevel + 1);
+    $('statPotion').textContent = 'Potion ' + (state.currentPotion + 1) + '/' + POTIONS_PER_LEVEL;
+    var totalStars = 0;
+    state.progress.levels.forEach(function(l) {
+      l.potions.forEach(function(p) { totalStars += p; });
+    });
+    $('statStars').textContent = totalStars + ' stars';
+  }
+
+  function renderPotionProgress() {
+    var container = $('potionProgress');
+    while (container.firstChild) container.removeChild(container.firstChild);
+    var prog = state.progress.levels[state.currentLevel];
+    for (var i = 0; i < POTIONS_PER_LEVEL; i++) {
+      var pip = document.createElement('div');
+      pip.className = 'potion-pip';
+      if (prog.potions[i] > 0) {
+        pip.classList.add('done');
+        pip.textContent = '\u2605';
+      }
+      if (i === state.currentPotion) pip.classList.add('current');
+      container.appendChild(pip);
+    }
+  }
+
+  function renderIngredients() {
+    var container = $('ingredients');
+    while (container.firstChild) container.removeChild(container.firstChild);
+    var hasSub = LEVEL_CONFIG[state.currentLevel].ops.indexOf('sub') >= 0;
+
+    state.ingredients.forEach(function(ing, idx) {
+      var div = document.createElement('div');
+      div.className = 'ingredient';
+      div.dataset.index = String(idx);
+
+      if (state.pickedIngredients.indexOf(idx) >= 0) {
+        div.classList.add('used');
+      }
+
+      // Build bottle SVG with DOM
+      var bottleSvg = buildBottleSvg(ing.shape, ing.color);
+      div.appendChild(bottleSvg);
+
+      // Number label
+      var num = document.createElement('div');
+      num.className = 'ing-number';
+      num.textContent = String(ing.value);
+      div.appendChild(num);
+
+      // Operation badge
+      if (hasSub) {
+        var op = document.createElement('div');
+        op.className = 'ing-op ' + ing.op;
+        op.textContent = ing.op === 'add' ? '+' : '\u2212';
+        div.appendChild(op);
+      }
+
+      (function(index) {
+        div.addEventListener('click', function() { pickIngredient(index); });
+      })(idx);
+
+      container.appendChild(div);
+    });
+  }
+
+  function renderStars() {
+    var display = $('starsDisplay');
+    while (display.firstChild) display.removeChild(display.firstChild);
+    var stars = getStars();
+    for (var i = 0; i < 3; i++) {
+      var s = document.createElement('span');
+      if (i < stars) s.classList.add('earned');
+      s.textContent = '\u2605';
+      display.appendChild(s);
+    }
+  }
+
+  function getStars() {
+    if (state.wrongPicks === 0) return 3;
+    if (state.wrongPicks <= 2) return 2;
+    return 1;
+  }
+
+  function updateLiquid() {
+    var surface = $('liquidSurface');
+    var progress = state.target > 0 ? Math.min(1, Math.abs(state.runningTotal) / state.target) : 0;
+    var potColor = POTION_COLORS[state.currentLevel][state.currentPotion];
+    state.currentLiquidColor = lerpColor('#7c3aed', potColor, progress);
+    surface.setAttribute('fill', state.currentLiquidColor);
+    surface.setAttribute('opacity', String(0.6 + progress * 0.35));
+    $('cauldronSvg').style.setProperty('--glow-color', state.currentLiquidColor);
+  }
+
+  // Game logic
+  function pickIngredient(idx) {
+    if (state.pickedIngredients.indexOf(idx) >= 0) return;
+
+    var ing = state.ingredients[idx];
+    var newTotal;
+    if (ing.op === 'sub') {
+      newTotal = state.runningTotal - ing.value;
+    } else {
+      newTotal = state.runningTotal + ing.value;
+    }
+
+    if (newTotal < 0) {
+      shakeElement($('runningTotal'));
+      return;
+    }
+
+    // Animate pour
+    var el = document.querySelector('.ingredient[data-index="' + idx + '"]');
+    if (el) el.classList.add('pouring');
+
+    state.pickedIngredients.push(idx);
+    state.runningTotal = newTotal;
+
+    // Spawn pour particles near cauldron
+    var cauldron = $('cauldronArea');
+    var rect = cauldron.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height * 0.45;
+    setTimeout(function() {
+      spawnParticles(cx, cy, 8, [ing.color, '#fff', state.currentLiquidColor]);
+    }, 300);
+
+    setTimeout(function() {
+      $('runningTotal').textContent = String(state.runningTotal);
+      updateLiquid();
+      renderIngredients();
+      renderStars();
+      $('undoBtn').disabled = state.pickedIngredients.length === 0;
+
+      if (state.runningTotal === state.target) {
+        setTimeout(function() { potionSuccess(); }, 400);
+      } else if (state.runningTotal > state.target && LEVEL_CONFIG[state.currentLevel].ops.indexOf('sub') < 0) {
+        state.wrongPicks++;
+        shakeElement($('runningTotal'));
+        renderStars();
+      }
+    }, 400);
+  }
+
+  function undoLastPick() {
+    if (state.pickedIngredients.length === 0) return;
+    var idx = state.pickedIngredients.pop();
+    var ing = state.ingredients[idx];
+
+    if (ing.op === 'sub') {
+      state.runningTotal += ing.value;
+    } else {
+      state.runningTotal -= ing.value;
+    }
+
+    $('runningTotal').textContent = String(state.runningTotal);
+    updateLiquid();
+    renderIngredients();
+    $('undoBtn').disabled = state.pickedIngredients.length === 0;
+  }
+
+  function resetPotion() {
+    state.pickedIngredients = [];
+    state.runningTotal = 0;
+    $('runningTotal').textContent = '0';
+    updateLiquid();
+    renderIngredients();
+    $('undoBtn').disabled = true;
+  }
+
+  function shakeElement(el) {
+    el.style.transition = 'transform 0.05s';
+    el.style.transform = 'translateX(-50%) translateX(8px)';
+    setTimeout(function() { el.style.transform = 'translateX(-50%) translateX(-8px)'; }, 60);
+    setTimeout(function() { el.style.transform = 'translateX(-50%) translateX(4px)'; }, 120);
+    setTimeout(function() { el.style.transform = 'translateX(-50%) translateX(0)'; }, 180);
+  }
+
+  function potionSuccess() {
+    var stars = getStars();
+    var lvl = state.currentLevel;
+    var pot = state.currentPotion;
+
+    if (stars > state.progress.levels[lvl].potions[pot]) {
+      state.progress.levels[lvl].potions[pot] = stars;
+    }
+    saveProgress();
+
+    // Big celebration particles
+    var cauldron = $('cauldronArea');
+    var rect = cauldron.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height * 0.4;
+    spawnStarParticles(cx, cy);
+    spawnParticles(cx, cy, 25, ['#fbbf24', '#c084fc', '#67e8f9', '#f472b6', '#a3e635', '#fff']);
+
+    var isLevelDone = state.progress.levels[lvl].potions.every(function(p) { return p > 0; });
+
+    if (isLevelDone && pot === POTIONS_PER_LEVEL - 1) {
+      showLevelComplete(lvl);
+      return;
+    }
+
+    // Show success card
+    var overlay = $('successOverlay');
+    var card = $('successCard');
+    while (card.firstChild) card.removeChild(card.firstChild);
+    card.className = 'success-card';
+
+    var h2 = document.createElement('h2');
+    h2.textContent = 'Potion Complete!';
+    card.appendChild(h2);
+
+    var emoji = document.createElement('div');
+    emoji.className = 'potion-result';
+    emoji.textContent = POTION_EMOJIS[lvl * 8 + pot];
+    card.appendChild(emoji);
+
+    var name = document.createElement('p');
+    name.style.fontSize = '18px';
+    name.style.color = '#fbbf24';
+    name.style.fontWeight = '700';
+    name.textContent = POTION_NAMES[lvl][pot];
+    card.appendChild(name);
+
+    var starsEl = document.createElement('div');
+    starsEl.className = 'stars-result';
+    for (var i = 0; i < 3; i++) {
+      var s = document.createElement('span');
+      s.textContent = '\u2605';
+      s.style.color = i < stars ? '#fbbf24' : 'rgba(255,255,255,0.2)';
+      starsEl.appendChild(s);
+    }
+    card.appendChild(starsEl);
+
+    var msg = document.createElement('p');
+    if (stars === 3) msg.textContent = 'Perfect brew! No wrong picks!';
+    else if (stars === 2) msg.textContent = 'Great job! Almost perfect!';
+    else msg.textContent = 'You did it! Try again for more stars!';
+    card.appendChild(msg);
+
+    var btn = document.createElement('button');
+    btn.className = 'btn';
+    if (pot < POTIONS_PER_LEVEL - 1) {
+      btn.textContent = 'Next Potion \u2192';
+      btn.addEventListener('click', function() {
+        overlay.classList.remove('active');
+        state.currentPotion++;
+        startPotion();
+      });
+    } else {
+      btn.textContent = 'Back to Levels';
+      btn.addEventListener('click', function() {
+        overlay.classList.remove('active');
+        renderLevelSelect();
+      });
+    }
+    card.appendChild(btn);
+
+    overlay.classList.add('active');
+  }
+
+  function showLevelComplete(lvl) {
+    if (lvl < 3 && !state.progress.levels[lvl + 1].unlocked) {
+      state.progress.levels[lvl + 1].unlocked = true;
+      saveProgress();
+    }
+
+    var overlay = $('successOverlay');
+    var card = $('successCard');
+    while (card.firstChild) card.removeChild(card.firstChild);
+    card.className = 'level-complete-card';
+
+    var h2 = document.createElement('h2');
+    h2.textContent = 'Level Complete!';
+    card.appendChild(h2);
+
+    var trophy = document.createElement('div');
+    trophy.className = 'trophy';
+    trophy.textContent = '\u{1F3C6}';
+    card.appendChild(trophy);
+
+    var levelName = document.createElement('p');
+    levelName.style.fontSize = '18px';
+    levelName.style.color = '#c4b5fd';
+    levelName.textContent = LEVEL_CONFIG[lvl].name + ' mastered!';
+    card.appendChild(levelName);
+
+    var summary = document.createElement('div');
+    summary.className = 'potions-summary';
+    for (var i = 0; i < POTIONS_PER_LEVEL; i++) {
+      var item = document.createElement('div');
+      item.className = 'potion-summary-item';
+      var iconDiv = document.createElement('div');
+      iconDiv.className = 'icon';
+      iconDiv.textContent = POTION_EMOJIS[lvl * 8 + i];
+      item.appendChild(iconDiv);
+      var starsDiv = document.createElement('div');
+      starsDiv.style.color = '#fbbf24';
+      starsDiv.style.fontSize = '10px';
+      var count = state.progress.levels[lvl].potions[i];
+      starsDiv.textContent = '\u2605'.repeat(count) + '\u2606'.repeat(3 - count);
+      item.appendChild(starsDiv);
+      summary.appendChild(item);
+    }
+    card.appendChild(summary);
+
+    var totalStars = 0;
+    state.progress.levels[lvl].potions.forEach(function(p) { totalStars += p; });
+    var totalP = document.createElement('p');
+    totalP.style.color = '#fbbf24';
+    totalP.style.fontSize = '16px';
+    totalP.style.fontWeight = '700';
+    totalP.textContent = totalStars + ' / ' + (POTIONS_PER_LEVEL * 3) + ' stars';
+    card.appendChild(totalP);
+
+    if (lvl < 3) {
+      var unlock = document.createElement('p');
+      unlock.style.color = '#67e8f9';
+      unlock.style.fontSize = '14px';
+      unlock.textContent = LEVEL_CONFIG[lvl + 1].name + ' unlocked!';
+      card.appendChild(unlock);
+    }
+
+    var btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.marginTop = '12px';
+    btn.textContent = 'Back to Levels';
+    btn.addEventListener('click', function() {
+      overlay.classList.remove('active');
+      card.className = 'success-card';
+      renderLevelSelect();
+    });
+    card.appendChild(btn);
+
+    overlay.classList.add('active');
+
+    setTimeout(function() {
+      var r = card.getBoundingClientRect();
+      spawnStarParticles(r.left + r.width / 2, r.top + r.height / 2);
+      spawnParticles(r.left + r.width / 2, r.top + r.height / 2, 40,
+        ['#fbbf24','#c084fc','#67e8f9','#f472b6','#a3e635','#fff','#fb923c']);
+    }, 300);
+  }
+
+  // Event listeners
+  $('undoBtn').addEventListener('click', undoLastPick);
+  $('resetBtn').addEventListener('click', resetPotion);
+
+  // Init
+  createBgStars();
+  renderLevelSelect();
+
+})();
+</script>
+</body>
+</html>

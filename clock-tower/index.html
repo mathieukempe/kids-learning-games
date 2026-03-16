@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clock Tower Rescue</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes wobble {
+  0% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-8px) rotate(-3deg); }
+  30% { transform: translateX(6px) rotate(2deg); }
+  45% { transform: translateX(-4px) rotate(-1deg); }
+  60% { transform: translateX(3px) rotate(1deg); }
+  75% { transform: translateX(-1px) rotate(0); }
+  100% { transform: translateX(0) rotate(0); }
+}
+@keyframes celebrate {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.15) rotate(-3deg); }
+  50% { transform: scale(1.1) rotate(3deg); }
+  75% { transform: scale(1.15) rotate(-2deg); }
+  100% { transform: scale(1); }
+}
+@keyframes starPop {
+  0% { transform: scale(0) rotate(0); opacity: 0; }
+  50% { transform: scale(1.3) rotate(180deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slideDown {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-15px); }
+  100% { transform: translateY(40px); opacity: 0.5; }
+}
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+@keyframes towerGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,215,0,0.3)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255,215,0,0.7)); }
+}
+@keyframes rescueBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-20px) scale(1.1); }
+  50% { transform: translateY(-10px) scale(1.05); }
+  70% { transform: translateY(-15px) scale(1.08); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes particleRise {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-120px) scale(0); opacity: 0; }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0); opacity: 1; }
+  100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(to bottom, #1a0533 0%, #2d1b69 20%, #5b3a8c 40%, #8b5fb0 55%, #c97b3a 75%, #f0a040 88%, #ffe4a0 100%);
+  color: #fff;
+  user-select: none;
+}
+
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Stars in background */
+.bg-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  animation: sparkle 3s infinite;
+}
+
+/* Tower Panel (left) */
+#tower-panel {
+  position: relative;
+  width: 200px;
+  min-width: 200px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 20px;
+  z-index: 2;
+}
+
+#tower-svg {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Main Game Area */
+#game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  padding: 20px;
+  position: relative;
+}
+
+/* Header */
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  z-index: 10;
+}
+
+#back-link {
+  color: #ffd780;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#back-link:hover { color: #fff; }
+
+#level-display {
+  background: rgba(91, 58, 140, 0.7);
+  border: 2px solid #c9a0dc;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f0d8ff;
+}
+
+#stars-display {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.star-icon {
+  width: 28px;
+  height: 28px;
+  transition: transform 0.4s;
+}
+.star-icon.earned {
+  animation: starPop 0.5s ease forwards;
+}
+
+/* Clock area */
+#clock-container {
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  padding: 20px;
+  margin-bottom: 24px;
+  animation: float 4s ease-in-out infinite;
+  position: relative;
+}
+
+#clock-container.correct-anim {
+  animation: celebrate 0.6s ease;
+}
+#clock-container.wrong-anim {
+  animation: wobble 0.5s ease;
+}
+
+/* Answer Area */
+#answer-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: slideUp 0.4s ease;
+}
+
+#time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.time-select {
+  background: rgba(45, 27, 105, 0.8);
+  border: 3px solid #9b7acc;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  padding: 8px 4px;
+  width: 90px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.time-select:focus {
+  outline: none;
+  border-color: #ffd780;
+  box-shadow: 0 0 12px rgba(255,215,128,0.5);
+}
+
+.time-colon {
+  color: #ffd780;
+  font-size: 2.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#submit-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border: 3px solid #c084fc;
+  border-radius: 16px;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 12px 40px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  letter-spacing: 0.5px;
+}
+#submit-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(168,85,247,0.5);
+}
+#submit-btn:active {
+  transform: scale(0.97);
+}
+
+#feedback {
+  font-size: 1.3rem;
+  font-weight: 600;
+  min-height: 36px;
+  transition: opacity 0.3s;
+}
+.feedback-correct { color: #6ee7b7; }
+.feedback-wrong { color: #fca5a5; }
+
+/* Floor indicator */
+#floor-indicator {
+  font-size: 1.1rem;
+  color: #dcc8f0;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* Particle container */
+#particles {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: particleRise 1.2s ease-out forwards;
+  pointer-events: none;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  animation: confettiFall 2.5s ease-in forwards;
+  pointer-events: none;
+}
+
+/* Screens */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 20px;
+  animation: fadeIn 0.5s ease;
+}
+.screen.active { display: flex; }
+
+#title-screen {
+  gap: 16px;
+}
+
+#title-screen h1 {
+  font-size: 2.8rem;
+  background: linear-gradient(135deg, #ffd780, #ff9f43, #ffd780);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(255,159,67,0.3));
+}
+
+#title-screen p {
+  font-size: 1.2rem;
+  color: #dcc8f0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.big-btn {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border: 3px solid #fbbf24;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 16px 48px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+  letter-spacing: 1px;
+}
+.big-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 24px rgba(249,115,22,0.4);
+}
+
+/* Level complete screen */
+#level-complete-screen h2 {
+  font-size: 2.2rem;
+  color: #ffd780;
+}
+#level-complete-screen .earned-stars {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+#level-complete-screen .earned-stars .star-icon {
+  width: 48px;
+  height: 48px;
+}
+
+/* Rescue screen */
+#rescue-screen h1 {
+  font-size: 2.6rem;
+  color: #ffd780;
+}
+#rescue-screen p {
+  color: #dcc8f0;
+  font-size: 1.15rem;
+}
+#rescue-character {
+  animation: rescueBounce 1.5s ease infinite;
+}
+
+/* Mobile adjustments */
+@media (max-width: 700px) {
+  #tower-panel { width: 100px; min-width: 100px; }
+  #title-screen h1 { font-size: 2rem; }
+  .time-select { width: 70px; font-size: 1.8rem; }
+  .time-colon { font-size: 2.2rem; }
+  #submit-btn { padding: 10px 28px; font-size: 1.1rem; }
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <!-- Background stars (added by JS) -->
+
+  <!-- Header -->
+  <div id="header">
+    <a id="back-link" href="../">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 16l-6-6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to Games
+    </a>
+    <div id="level-display">Level 1</div>
+    <div id="stars-display"></div>
+  </div>
+
+  <!-- Tower Panel -->
+  <div id="tower-panel">
+    <svg id="tower-svg" width="160" viewBox="0 0 160 700" fill="none" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- Game Area -->
+  <div id="game-area">
+
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen active">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="55" fill="#2d1b69" stroke="#ffd780" stroke-width="4"/>
+        <circle cx="60" cy="60" r="48" fill="none" stroke="#9b7acc" stroke-width="1.5"/>
+        <line x1="60" y1="60" x2="60" y2="28" stroke="#ffd780" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="60" x2="82" y2="52" stroke="#c9a0dc" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="60" cy="60" r="4" fill="#ffd780"/>
+      </svg>
+      <h1>Clock Tower Rescue</h1>
+      <p>A magical creature is trapped at the top of the tower! Read the clocks correctly to climb each floor and reach the top.</p>
+      <button class="big-btn" id="start-btn">Begin Adventure</button>
+      <p id="saved-progress" style="font-size:0.95rem; color:#b09ac5;"></p>
+    </div>
+
+    <!-- Play Screen -->
+    <div id="play-screen" class="screen">
+      <div id="floor-indicator">Floor 1 of 10</div>
+      <div id="clock-container">
+        <svg id="clock-svg" width="260" height="260" viewBox="0 0 260 260"></svg>
+      </div>
+      <div id="answer-area">
+        <div id="time-input-group">
+          <select id="hour-select" class="time-select" aria-label="Hour"></select>
+          <span class="time-colon">:</span>
+          <select id="minute-select" class="time-select" aria-label="Minute"></select>
+        </div>
+        <button id="submit-btn">Check Time</button>
+        <div id="feedback"></div>
+      </div>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div id="level-complete-screen" class="screen">
+      <h2>Level Complete!</h2>
+      <div id="lc-stars" class="earned-stars"></div>
+      <p id="lc-message" style="color:#dcc8f0; font-size:1.1rem;"></p>
+      <button class="big-btn" id="next-level-btn">Next Level</button>
+    </div>
+
+    <!-- Rescue Screen -->
+    <div id="rescue-screen" class="screen">
+      <div id="rescue-character"></div>
+      <h1>Tower Rescued!</h1>
+      <p id="rescue-msg">You climbed all the way to the top and saved the magical phoenix!</p>
+      <div id="rescue-stars" class="earned-stars"></div>
+      <button class="big-btn" id="play-again-btn">Play Again</button>
+    </div>
+  </div>
+
+  <!-- Particles -->
+  <div id="particles"></div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ---- Constants ----
+  var FLOORS_PER_LEVEL = 10;
+  var TOTAL_LEVELS = 4;
+  var LEVEL_NAMES = ["Full Hours", "Half Hours", "Quarter Hours", "Five Minutes"];
+
+  // ---- State ----
+  var state = {
+    level: 1,
+    floor: 1,
+    mistakes: 0,
+    totalStars: 0,
+    levelStars: [],
+    targetHour: 0,
+    targetMinute: 0,
+    animating: false
+  };
+
+  // ---- DOM refs ----
+  var $ = function(id) { return document.getElementById(id); };
+  var titleScreen = $("title-screen");
+  var playScreen = $("play-screen");
+  var lcScreen = $("level-complete-screen");
+  var rescueScreen = $("rescue-screen");
+  var clockSvg = $("clock-svg");
+  var clockContainer = $("clock-container");
+  var hourSelect = $("hour-select");
+  var minuteSelect = $("minute-select");
+  var submitBtn = $("submit-btn");
+  var feedbackEl = $("feedback");
+  var floorIndicator = $("floor-indicator");
+  var levelDisplay = $("level-display");
+  var starsDisplay = $("stars-display");
+  var towerSvg = $("tower-svg");
+  var particlesEl = $("particles");
+
+  // ---- Init selects ----
+  function initSelects() {
+    while (hourSelect.firstChild) hourSelect.removeChild(hourSelect.firstChild);
+    while (minuteSelect.firstChild) minuteSelect.removeChild(minuteSelect.firstChild);
+
+    var def1 = document.createElement("option");
+    def1.value = "";
+    def1.textContent = "--";
+    def1.disabled = true;
+    def1.selected = true;
+    hourSelect.appendChild(def1);
+
+    for (var h = 1; h <= 12; h++) {
+      var opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      hourSelect.appendChild(opt);
+    }
+
+    var def2 = document.createElement("option");
+    def2.value = "";
+    def2.textContent = "--";
+    def2.disabled = true;
+    def2.selected = true;
+    minuteSelect.appendChild(def2);
+
+    for (var m = 0; m < 60; m += 5) {
+      var opt2 = document.createElement("option");
+      opt2.value = m;
+      opt2.textContent = m < 10 ? "0" + m : "" + m;
+      minuteSelect.appendChild(opt2);
+    }
+
+    // For levels 1-3, restrict minutes further
+    updateMinuteOptions();
+  }
+
+  function updateMinuteOptions() {
+    while (minuteSelect.firstChild) minuteSelect.removeChild(minuteSelect.firstChild);
+    var def2 = document.createElement("option");
+    def2.value = "";
+    def2.textContent = "--";
+    def2.disabled = true;
+    def2.selected = true;
+    minuteSelect.appendChild(def2);
+
+    var allowed;
+    if (state.level === 1) allowed = [0];
+    else if (state.level === 2) allowed = [0, 30];
+    else if (state.level === 3) allowed = [0, 15, 30, 45];
+    else {
+      allowed = [];
+      for (var m = 0; m < 60; m += 5) allowed.push(m);
+    }
+
+    for (var i = 0; i < allowed.length; i++) {
+      var m = allowed[i];
+      var opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m < 10 ? "0" + m : "" + m;
+      minuteSelect.appendChild(opt);
+    }
+  }
+
+  // ---- Background stars ----
+  function createBgStars() {
+    var container = $("game-container");
+    for (var i = 0; i < 60; i++) {
+      var star = document.createElement("div");
+      star.className = "bg-star";
+      star.style.left = (Math.random() * 100) + "%";
+      star.style.top = (Math.random() * 50) + "%";
+      star.style.animationDelay = (Math.random() * 5) + "s";
+      star.style.opacity = 0.3 + Math.random() * 0.7;
+      var s = 2 + Math.random() * 3;
+      star.style.width = s + "px";
+      star.style.height = s + "px";
+      container.appendChild(star);
+    }
+  }
+
+  // ---- Draw SVG Clock ----
+  function drawClock(hour, minute) {
+    while (clockSvg.firstChild) clockSvg.removeChild(clockSvg.firstChild);
+    var NS = "http://www.w3.org/2000/svg";
+    var cx = 130, cy = 130, r = 118;
+
+    // Outer glow
+    var defs = document.createElementNS(NS, "defs");
+    var grad = document.createElementNS(NS, "radialGradient");
+    grad.setAttribute("id", "clockGlow");
+    var s1 = document.createElementNS(NS, "stop");
+    s1.setAttribute("offset", "0.85");
+    s1.setAttribute("stop-color", "#1e1248");
+    var s2 = document.createElementNS(NS, "stop");
+    s2.setAttribute("offset", "1");
+    s2.setAttribute("stop-color", "#3b2270");
+    grad.appendChild(s1);
+    grad.appendChild(s2);
+    defs.appendChild(grad);
+
+    // Filter for shadow
+    var filter = document.createElementNS(NS, "filter");
+    filter.setAttribute("id", "handShadow");
+    var feOffset = document.createElementNS(NS, "feDropShadow");
+    feOffset.setAttribute("dx", "1");
+    feOffset.setAttribute("dy", "2");
+    feOffset.setAttribute("stdDeviation", "2");
+    feOffset.setAttribute("flood-color", "rgba(0,0,0,0.4)");
+    filter.appendChild(feOffset);
+    defs.appendChild(filter);
+
+    clockSvg.appendChild(defs);
+
+    // Outer ring
+    var outerRing = document.createElementNS(NS, "circle");
+    outerRing.setAttribute("cx", cx);
+    outerRing.setAttribute("cy", cy);
+    outerRing.setAttribute("r", r + 6);
+    outerRing.setAttribute("fill", "none");
+    outerRing.setAttribute("stroke", "#c9a0dc");
+    outerRing.setAttribute("stroke-width", "3");
+    clockSvg.appendChild(outerRing);
+
+    // Face
+    var face = document.createElementNS(NS, "circle");
+    face.setAttribute("cx", cx);
+    face.setAttribute("cy", cy);
+    face.setAttribute("r", r);
+    face.setAttribute("fill", "url(#clockGlow)");
+    face.setAttribute("stroke", "#ffd780");
+    face.setAttribute("stroke-width", "4");
+    clockSvg.appendChild(face);
+
+    // Inner decoration ring
+    var innerRing = document.createElementNS(NS, "circle");
+    innerRing.setAttribute("cx", cx);
+    innerRing.setAttribute("cy", cy);
+    innerRing.setAttribute("r", r - 12);
+    innerRing.setAttribute("fill", "none");
+    innerRing.setAttribute("stroke", "rgba(201,160,220,0.25)");
+    innerRing.setAttribute("stroke-width", "1");
+    clockSvg.appendChild(innerRing);
+
+    // Minute ticks
+    for (var i = 0; i < 60; i++) {
+      var angle = (i * 6 - 90) * Math.PI / 180;
+      var isHour = i % 5 === 0;
+      var outerR = r - 8;
+      var innerR = isHour ? r - 24 : r - 16;
+      var tick = document.createElementNS(NS, "line");
+      tick.setAttribute("x1", cx + Math.cos(angle) * innerR);
+      tick.setAttribute("y1", cy + Math.sin(angle) * innerR);
+      tick.setAttribute("x2", cx + Math.cos(angle) * outerR);
+      tick.setAttribute("y2", cy + Math.sin(angle) * outerR);
+      tick.setAttribute("stroke", isHour ? "#ffd780" : "rgba(201,160,220,0.5)");
+      tick.setAttribute("stroke-width", isHour ? "3" : "1.5");
+      tick.setAttribute("stroke-linecap", "round");
+      clockSvg.appendChild(tick);
+    }
+
+    // Hour numbers
+    var numbers = ["12","1","2","3","4","5","6","7","8","9","10","11"];
+    for (var n = 0; n < 12; n++) {
+      var a = (n * 30 - 90) * Math.PI / 180;
+      var nr = r - 38;
+      var text = document.createElementNS(NS, "text");
+      text.setAttribute("x", cx + Math.cos(a) * nr);
+      text.setAttribute("y", cy + Math.sin(a) * nr + 7);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("fill", "#e8d4f0");
+      text.setAttribute("font-size", "18");
+      text.setAttribute("font-weight", "700");
+      text.setAttribute("font-family", "Georgia, serif");
+      text.textContent = numbers[n];
+      clockSvg.appendChild(text);
+    }
+
+    // Hour hand
+    var hAngle = ((hour % 12) * 30 + minute * 0.5 - 90) * Math.PI / 180;
+    var hourHand = document.createElementNS(NS, "line");
+    hourHand.setAttribute("x1", cx - Math.cos(hAngle) * 12);
+    hourHand.setAttribute("y1", cy - Math.sin(hAngle) * 12);
+    hourHand.setAttribute("x2", cx + Math.cos(hAngle) * 58);
+    hourHand.setAttribute("y2", cy + Math.sin(hAngle) * 58);
+    hourHand.setAttribute("stroke", "#ffd780");
+    hourHand.setAttribute("stroke-width", "7");
+    hourHand.setAttribute("stroke-linecap", "round");
+    hourHand.setAttribute("filter", "url(#handShadow)");
+    clockSvg.appendChild(hourHand);
+
+    // Minute hand
+    var mAngle = (minute * 6 - 90) * Math.PI / 180;
+    var minuteHand = document.createElementNS(NS, "line");
+    minuteHand.setAttribute("x1", cx - Math.cos(mAngle) * 14);
+    minuteHand.setAttribute("y1", cy - Math.sin(mAngle) * 14);
+    minuteHand.setAttribute("x2", cx + Math.cos(mAngle) * 82);
+    minuteHand.setAttribute("y2", cy + Math.sin(mAngle) * 82);
+    minuteHand.setAttribute("stroke", "#c9a0dc");
+    minuteHand.setAttribute("stroke-width", "4.5");
+    minuteHand.setAttribute("stroke-linecap", "round");
+    minuteHand.setAttribute("filter", "url(#handShadow)");
+    clockSvg.appendChild(minuteHand);
+
+    // Center cap
+    var centerOuter = document.createElementNS(NS, "circle");
+    centerOuter.setAttribute("cx", cx);
+    centerOuter.setAttribute("cy", cy);
+    centerOuter.setAttribute("r", "8");
+    centerOuter.setAttribute("fill", "#ffd780");
+    clockSvg.appendChild(centerOuter);
+    var centerInner = document.createElementNS(NS, "circle");
+    centerInner.setAttribute("cx", cx);
+    centerInner.setAttribute("cy", cy);
+    centerInner.setAttribute("r", "4");
+    centerInner.setAttribute("fill", "#2d1b69");
+    clockSvg.appendChild(centerInner);
+  }
+
+  // ---- Draw Tower ----
+  function drawTower() {
+    while (towerSvg.firstChild) towerSvg.removeChild(towerSvg.firstChild);
+    var NS = "http://www.w3.org/2000/svg";
+
+    var totalFloors = FLOORS_PER_LEVEL;
+    var floorH = 50;
+    var towerW = 100;
+    var baseX = 30;
+    var totalH = (totalFloors + 1) * floorH + 80;
+    towerSvg.setAttribute("height", totalH);
+    towerSvg.setAttribute("viewBox", "0 0 160 " + totalH);
+
+    // Tower base/ground
+    var ground = document.createElementNS(NS, "rect");
+    ground.setAttribute("x", "0");
+    ground.setAttribute("y", totalH - 30);
+    ground.setAttribute("width", "160");
+    ground.setAttribute("height", "30");
+    ground.setAttribute("rx", "4");
+    ground.setAttribute("fill", "#2a5e1e");
+    towerSvg.appendChild(ground);
+
+    // Tower body
+    var towerBody = document.createElementNS(NS, "rect");
+    towerBody.setAttribute("x", baseX);
+    towerBody.setAttribute("y", 60);
+    towerBody.setAttribute("width", towerW);
+    towerBody.setAttribute("height", totalFloors * floorH + 10);
+    towerBody.setAttribute("rx", "6");
+    towerBody.setAttribute("fill", "#3b2270");
+    towerBody.setAttribute("stroke", "#6b4f9e");
+    towerBody.setAttribute("stroke-width", "2");
+    towerSvg.appendChild(towerBody);
+
+    // Tower roof (triangle)
+    var roof = document.createElementNS(NS, "polygon");
+    var roofMid = baseX + towerW / 2;
+    roof.setAttribute("points", (baseX - 10) + ",62 " + roofMid + ",10 " + (baseX + towerW + 10) + ",62");
+    roof.setAttribute("fill", "#5b2d8e");
+    roof.setAttribute("stroke", "#8b5fb0");
+    roof.setAttribute("stroke-width", "2");
+    towerSvg.appendChild(roof);
+
+    // Flag on top
+    var flagPole = document.createElementNS(NS, "line");
+    flagPole.setAttribute("x1", roofMid);
+    flagPole.setAttribute("y1", 10);
+    flagPole.setAttribute("x2", roofMid);
+    flagPole.setAttribute("y2", -5);
+    flagPole.setAttribute("stroke", "#ffd780");
+    flagPole.setAttribute("stroke-width", "2");
+    towerSvg.appendChild(flagPole);
+    var flag = document.createElementNS(NS, "polygon");
+    flag.setAttribute("points", roofMid + ",-5 " + (roofMid + 18) + ",2 " + roofMid + ",9");
+    flag.setAttribute("fill", "#f97316");
+    towerSvg.appendChild(flag);
+
+    // Floor lines and windows
+    for (var f = 0; f < totalFloors; f++) {
+      var fy = 60 + (totalFloors - f - 1) * floorH + floorH;
+      // floor line
+      var line = document.createElementNS(NS, "line");
+      line.setAttribute("x1", baseX);
+      line.setAttribute("y1", fy);
+      line.setAttribute("x2", baseX + towerW);
+      line.setAttribute("y2", fy);
+      line.setAttribute("stroke", "#6b4f9e");
+      line.setAttribute("stroke-width", "1");
+      towerSvg.appendChild(line);
+
+      // window
+      var wy = fy - floorH / 2 - 10;
+      var wx = baseX + towerW / 2 - 10;
+      var win = document.createElementNS(NS, "rect");
+      win.setAttribute("x", wx);
+      win.setAttribute("y", wy);
+      win.setAttribute("width", "20");
+      win.setAttribute("height", "20");
+      win.setAttribute("rx", "3");
+
+      var floorNum = f + 1;
+      if (floorNum < state.floor) {
+        win.setAttribute("fill", "#ffd78088");
+        win.setAttribute("stroke", "#ffd780");
+      } else if (floorNum === state.floor) {
+        win.setAttribute("fill", "#ffd780");
+        win.setAttribute("stroke", "#fff");
+        win.setAttribute("stroke-width", "2");
+      } else {
+        win.setAttribute("fill", "#1a053355");
+        win.setAttribute("stroke", "#6b4f9e");
+      }
+      win.setAttribute("stroke-width", win.getAttribute("stroke-width") || "1");
+      towerSvg.appendChild(win);
+
+      // Floor number
+      var fLabel = document.createElementNS(NS, "text");
+      fLabel.setAttribute("x", baseX + towerW + 12);
+      fLabel.setAttribute("y", fy - floorH / 2 + 5);
+      fLabel.setAttribute("fill", floorNum === state.floor ? "#ffd780" : "#8b7aaa");
+      fLabel.setAttribute("font-size", floorNum === state.floor ? "14" : "11");
+      fLabel.setAttribute("font-weight", floorNum === state.floor ? "700" : "400");
+      fLabel.setAttribute("font-family", "sans-serif");
+      fLabel.textContent = floorNum;
+      towerSvg.appendChild(fLabel);
+    }
+
+    // Character (wizard)
+    var charFloor = state.floor;
+    var charY = 60 + (totalFloors - charFloor) * floorH + floorH - 6;
+    var charX = baseX - 6;
+    drawWizard(NS, towerSvg, charX, charY);
+
+    // Creature at top (phoenix) if not rescued
+    if (state.level <= TOTAL_LEVELS) {
+      var topY = 40;
+      drawPhoenix(NS, towerSvg, baseX + towerW / 2, topY, 0.6);
+    }
+  }
+
+  function drawWizard(NS, parent, x, y) {
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "wizard-char");
+    // Body
+    var body = document.createElementNS(NS, "ellipse");
+    body.setAttribute("cx", x);
+    body.setAttribute("cy", y - 12);
+    body.setAttribute("rx", "10");
+    body.setAttribute("ry", "12");
+    body.setAttribute("fill", "#7c3aed");
+    g.appendChild(body);
+    // Head
+    var head = document.createElementNS(NS, "circle");
+    head.setAttribute("cx", x);
+    head.setAttribute("cy", y - 28);
+    head.setAttribute("r", "8");
+    head.setAttribute("fill", "#fcd9b6");
+    g.appendChild(head);
+    // Hat
+    var hat = document.createElementNS(NS, "polygon");
+    hat.setAttribute("points", (x - 10) + "," + (y - 32) + " " + x + "," + (y - 52) + " " + (x + 10) + "," + (y - 32));
+    hat.setAttribute("fill", "#5b2d8e");
+    hat.setAttribute("stroke", "#ffd780");
+    hat.setAttribute("stroke-width", "1");
+    g.appendChild(hat);
+    // Hat brim
+    var brim = document.createElementNS(NS, "ellipse");
+    brim.setAttribute("cx", x);
+    brim.setAttribute("cy", y - 32);
+    brim.setAttribute("rx", "12");
+    brim.setAttribute("ry", "3");
+    brim.setAttribute("fill", "#5b2d8e");
+    g.appendChild(brim);
+    // Star on hat
+    var star = document.createElementNS(NS, "text");
+    star.setAttribute("x", x - 3);
+    star.setAttribute("y", y - 38);
+    star.setAttribute("fill", "#ffd780");
+    star.setAttribute("font-size", "8");
+    star.textContent = "\u2605";
+    g.appendChild(star);
+    // Eyes
+    var eye1 = document.createElementNS(NS, "circle");
+    eye1.setAttribute("cx", x - 3);
+    eye1.setAttribute("cy", y - 29);
+    eye1.setAttribute("r", "1.5");
+    eye1.setAttribute("fill", "#2d1b69");
+    g.appendChild(eye1);
+    var eye2 = document.createElementNS(NS, "circle");
+    eye2.setAttribute("cx", x + 3);
+    eye2.setAttribute("cy", y - 29);
+    eye2.setAttribute("r", "1.5");
+    eye2.setAttribute("fill", "#2d1b69");
+    g.appendChild(eye2);
+    // Wand
+    var wand = document.createElementNS(NS, "line");
+    wand.setAttribute("x1", x + 10);
+    wand.setAttribute("y1", y - 16);
+    wand.setAttribute("x2", x + 22);
+    wand.setAttribute("y2", y - 28);
+    wand.setAttribute("stroke", "#c9a0dc");
+    wand.setAttribute("stroke-width", "2");
+    wand.setAttribute("stroke-linecap", "round");
+    g.appendChild(wand);
+    var wandTip = document.createElementNS(NS, "circle");
+    wandTip.setAttribute("cx", x + 22);
+    wandTip.setAttribute("cy", y - 28);
+    wandTip.setAttribute("r", "3");
+    wandTip.setAttribute("fill", "#ffd780");
+    g.appendChild(wandTip);
+
+    parent.appendChild(g);
+  }
+
+  function drawPhoenix(NS, parent, cx, cy, scale) {
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "translate(" + cx + "," + cy + ") scale(" + scale + ")");
+    // Body
+    var body = document.createElementNS(NS, "ellipse");
+    body.setAttribute("cx", "0");
+    body.setAttribute("cy", "0");
+    body.setAttribute("rx", "14");
+    body.setAttribute("ry", "10");
+    body.setAttribute("fill", "#f97316");
+    g.appendChild(body);
+    // Wings
+    var wing1 = document.createElementNS(NS, "ellipse");
+    wing1.setAttribute("cx", "-16");
+    wing1.setAttribute("cy", "-6");
+    wing1.setAttribute("rx", "12");
+    wing1.setAttribute("ry", "6");
+    wing1.setAttribute("fill", "#fbbf24");
+    wing1.setAttribute("transform", "rotate(-20,-16,-6)");
+    g.appendChild(wing1);
+    var wing2 = document.createElementNS(NS, "ellipse");
+    wing2.setAttribute("cx", "16");
+    wing2.setAttribute("cy", "-6");
+    wing2.setAttribute("rx", "12");
+    wing2.setAttribute("ry", "6");
+    wing2.setAttribute("fill", "#fbbf24");
+    wing2.setAttribute("transform", "rotate(20,16,-6)");
+    g.appendChild(wing2);
+    // Head
+    var h = document.createElementNS(NS, "circle");
+    h.setAttribute("cx", "0");
+    h.setAttribute("cy", "-14");
+    h.setAttribute("r", "8");
+    h.setAttribute("fill", "#f59e0b");
+    g.appendChild(h);
+    // Eye
+    var eye = document.createElementNS(NS, "circle");
+    eye.setAttribute("cx", "-3");
+    eye.setAttribute("cy", "-15");
+    eye.setAttribute("r", "2");
+    eye.setAttribute("fill", "#1a0533");
+    g.appendChild(eye);
+    // Tail feathers
+    var tail = document.createElementNS(NS, "path");
+    tail.setAttribute("d", "M0,10 Q-8,22 -4,30 Q0,24 4,30 Q8,22 0,10");
+    tail.setAttribute("fill", "#ef4444");
+    g.appendChild(tail);
+
+    parent.appendChild(g);
+  }
+
+  // ---- Generate time for level ----
+  function generateTime() {
+    var hour = Math.floor(Math.random() * 12) + 1;
+    var minute = 0;
+    if (state.level === 1) {
+      minute = 0;
+    } else if (state.level === 2) {
+      minute = Math.random() < 0.5 ? 0 : 30;
+    } else if (state.level === 3) {
+      var opts = [0, 15, 30, 45];
+      minute = opts[Math.floor(Math.random() * opts.length)];
+    } else {
+      minute = Math.floor(Math.random() * 12) * 5;
+    }
+    state.targetHour = hour;
+    state.targetMinute = minute;
+  }
+
+  // ---- Particles ----
+  function spawnParticles(x, y, count, colors) {
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement("div");
+      p.className = "particle";
+      var size = 6 + Math.random() * 10;
+      p.style.width = size + "px";
+      p.style.height = size + "px";
+      p.style.left = (x + (Math.random() - 0.5) * 80) + "px";
+      p.style.top = (y + (Math.random() - 0.5) * 30) + "px";
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (0.8 + Math.random() * 0.8) + "s";
+      p.style.animationDelay = (Math.random() * 0.3) + "s";
+      particlesEl.appendChild(p);
+      (function(el) {
+        setTimeout(function() {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 2000);
+      })(p);
+    }
+  }
+
+  function spawnConfetti() {
+    var colors = ["#ffd780","#f97316","#7c3aed","#a855f7","#6ee7b7","#fbbf24","#ef4444","#60a5fa"];
+    for (var i = 0; i < 50; i++) {
+      var c = document.createElement("div");
+      c.className = "confetti";
+      var size = 6 + Math.random() * 8;
+      c.style.width = size + "px";
+      c.style.height = size + (Math.random() > 0.5 ? size * 0.4 : 0) + "px";
+      c.style.left = (Math.random() * 100) + "%";
+      c.style.top = "-10px";
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+      c.style.animationDelay = (Math.random() * 1.5) + "s";
+      c.style.animationDuration = (2 + Math.random() * 2) + "s";
+      particlesEl.appendChild(c);
+      (function(el) {
+        setTimeout(function() {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 5000);
+      })(c);
+    }
+  }
+
+  // ---- Stars ----
+  function calcStars(mistakes) {
+    if (mistakes === 0) return 3;
+    if (mistakes <= 2) return 2;
+    return 1;
+  }
+
+  function renderStarsDisplay() {
+    while (starsDisplay.firstChild) starsDisplay.removeChild(starsDisplay.firstChild);
+    var total = 0;
+    for (var i = 0; i < state.levelStars.length; i++) total += state.levelStars[i];
+    for (var s = 0; s < total; s++) {
+      var svg = createStarSVG(true);
+      svg.classList.add("earned");
+      svg.style.animationDelay = (s * 0.08) + "s";
+      starsDisplay.appendChild(svg);
+    }
+  }
+
+  function createStarSVG(filled) {
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", "28");
+    svg.setAttribute("height", "28");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", "star-icon");
+    var path = document.createElementNS(NS, "path");
+    path.setAttribute("d", "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z");
+    path.setAttribute("fill", filled ? "#fbbf24" : "#4a3570");
+    path.setAttribute("stroke", filled ? "#f59e0b" : "#6b4f9e");
+    path.setAttribute("stroke-width", "1");
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function renderLevelStars(container, count) {
+    while (container.firstChild) container.removeChild(container.firstChild);
+    for (var i = 0; i < 3; i++) {
+      var svg = createStarSVG(i < count);
+      svg.style.width = "48px";
+      svg.style.height = "48px";
+      if (i < count) {
+        svg.classList.add("earned");
+        svg.style.animationDelay = (0.3 + i * 0.25) + "s";
+      }
+      container.appendChild(svg);
+    }
+  }
+
+  // ---- Screens ----
+  function showScreen(screen) {
+    var all = [titleScreen, playScreen, lcScreen, rescueScreen];
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.remove("active");
+    }
+    screen.classList.add("active");
+  }
+
+  // ---- Game Flow ----
+  function startGame() {
+    state.level = 1;
+    state.floor = 1;
+    state.mistakes = 0;
+    state.totalStars = 0;
+    state.levelStars = [];
+    startLevel();
+  }
+
+  function startLevel() {
+    state.floor = 1;
+    state.mistakes = 0;
+    state.animating = false;
+    levelDisplay.textContent = "Level " + state.level + ": " + LEVEL_NAMES[state.level - 1];
+    updateMinuteOptions();
+    renderStarsDisplay();
+    showScreen(playScreen);
+    nextFloor();
+  }
+
+  function nextFloor() {
+    feedbackEl.textContent = "";
+    feedbackEl.className = "";
+    floorIndicator.textContent = "Floor " + state.floor + " of " + FLOORS_PER_LEVEL;
+    generateTime();
+    drawClock(state.targetHour, state.targetMinute);
+    drawTower();
+    hourSelect.value = "";
+    minuteSelect.value = "";
+    hourSelect.focus();
+    state.animating = false;
+  }
+
+  function checkAnswer() {
+    if (state.animating) return;
+    var h = parseInt(hourSelect.value, 10);
+    var m = parseInt(minuteSelect.value, 10);
+    if (isNaN(h) || isNaN(m)) {
+      feedbackEl.textContent = "Please select both hour and minute!";
+      feedbackEl.className = "feedback-wrong";
+      return;
+    }
+
+    if (h === state.targetHour && m === state.targetMinute) {
+      onCorrect();
+    } else {
+      onWrong();
+    }
+  }
+
+  function onCorrect() {
+    state.animating = true;
+    feedbackEl.textContent = "Correct! Great job!";
+    feedbackEl.className = "feedback-correct";
+    clockContainer.classList.remove("wrong-anim");
+    void clockContainer.offsetWidth;
+    clockContainer.classList.add("correct-anim");
+
+    // Particles
+    var rect = clockContainer.getBoundingClientRect();
+    spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 18,
+      ["#ffd780","#fbbf24","#6ee7b7","#a855f7","#f97316"]);
+
+    setTimeout(function() {
+      clockContainer.classList.remove("correct-anim");
+      if (state.floor >= FLOORS_PER_LEVEL) {
+        completeLevel();
+      } else {
+        state.floor++;
+        nextFloor();
+      }
+    }, 900);
+  }
+
+  function onWrong() {
+    state.animating = true;
+    state.mistakes++;
+
+    var targetStr = state.targetHour + ":" + (state.targetMinute < 10 ? "0" + state.targetMinute : state.targetMinute);
+    feedbackEl.textContent = "Not quite! Try again!";
+    feedbackEl.className = "feedback-wrong";
+    clockContainer.classList.remove("correct-anim");
+    void clockContainer.offsetWidth;
+    clockContainer.classList.add("wrong-anim");
+
+    if (state.floor > 1) {
+      state.floor--;
+    }
+    drawTower();
+
+    setTimeout(function() {
+      clockContainer.classList.remove("wrong-anim");
+      floorIndicator.textContent = "Floor " + state.floor + " of " + FLOORS_PER_LEVEL;
+      state.animating = false;
+      hourSelect.value = "";
+      minuteSelect.value = "";
+    }, 700);
+  }
+
+  function completeLevel() {
+    var stars = calcStars(state.mistakes);
+    state.levelStars.push(stars);
+    state.totalStars += stars;
+    renderStarsDisplay();
+    saveProgress();
+
+    if (state.level >= TOTAL_LEVELS) {
+      showRescueScreen();
+      return;
+    }
+
+    // Level complete screen
+    showScreen(lcScreen);
+    var h2 = lcScreen.querySelector("h2");
+    h2.textContent = "Level " + state.level + " Complete!";
+
+    renderLevelStars($("lc-stars"), stars);
+
+    var msg = $("lc-message");
+    if (stars === 3) msg.textContent = "Perfect! No mistakes at all!";
+    else if (stars === 2) msg.textContent = "Great work! Just a few small slips.";
+    else msg.textContent = "You made it! Keep practicing to earn more stars.";
+
+    spawnConfetti();
+  }
+
+  function advanceLevel() {
+    state.level++;
+    startLevel();
+  }
+
+  function showRescueScreen() {
+    showScreen(rescueScreen);
+    spawnConfetti();
+    setTimeout(spawnConfetti, 1200);
+
+    // Draw big phoenix
+    var container = $("rescue-character");
+    while (container.firstChild) container.removeChild(container.firstChild);
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", "150");
+    svg.setAttribute("height", "150");
+    svg.setAttribute("viewBox", "-40 -30 80 80");
+    drawPhoenix(NS, svg, 0, 0, 1.6);
+    container.appendChild(svg);
+
+    // Total stars
+    var totalPossible = TOTAL_LEVELS * 3;
+    var total = 0;
+    for (var i = 0; i < state.levelStars.length; i++) total += state.levelStars[i];
+
+    var rescueMsg = $("rescue-msg");
+    rescueMsg.textContent = "You rescued the magical phoenix! Total stars: " + total + " / " + totalPossible;
+
+    var starsContainer = $("rescue-stars");
+    while (starsContainer.firstChild) starsContainer.removeChild(starsContainer.firstChild);
+    for (var s = 0; s < totalPossible; s++) {
+      var star = createStarSVG(s < total);
+      star.style.width = "36px";
+      star.style.height = "36px";
+      if (s < total) {
+        star.classList.add("earned");
+        star.style.animationDelay = (0.5 + s * 0.15) + "s";
+      }
+      starsContainer.appendChild(star);
+    }
+
+    saveProgress();
+  }
+
+  // ---- Local Storage ----
+  function saveProgress() {
+    try {
+      var data = {
+        bestStars: state.levelStars.slice(),
+        bestTotal: state.totalStars,
+        highestLevel: state.level
+      };
+      var prev = loadProgress();
+      if (prev && prev.bestTotal > data.bestTotal) {
+        data.bestTotal = prev.bestTotal;
+        data.bestStars = prev.bestStars;
+      }
+      localStorage.setItem("clockTowerRescue", JSON.stringify(data));
+    } catch(e) {}
+  }
+
+  function loadProgress() {
+    try {
+      var raw = localStorage.getItem("clockTowerRescue");
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+  }
+
+  function showSavedProgress() {
+    var data = loadProgress();
+    var el = $("saved-progress");
+    if (data && data.bestTotal > 0) {
+      el.textContent = "Best score: " + data.bestTotal + " / " + (TOTAL_LEVELS * 3) + " stars";
+    } else {
+      el.textContent = "";
+    }
+  }
+
+  // ---- Event Listeners ----
+  $("start-btn").addEventListener("click", function() {
+    startGame();
+  });
+
+  submitBtn.addEventListener("click", function() {
+    checkAnswer();
+  });
+
+  $("next-level-btn").addEventListener("click", function() {
+    advanceLevel();
+  });
+
+  $("play-again-btn").addEventListener("click", function() {
+    showScreen(titleScreen);
+    showSavedProgress();
+  });
+
+  // Enter key to submit
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && playScreen.classList.contains("active")) {
+      checkAnswer();
+    }
+  });
+
+  // ---- Init ----
+  createBgStars();
+  showSavedProgress();
+  drawTower();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catapulte de Conjugaison</title>
+<style>
+/* ─── RESET & BASE ─── */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  background:#2c1810;
+  color:#f5e6d3;
+  display:flex;flex-direction:column;
+  user-select:none;
+}
+
+/* ─── BACK LINK ─── */
+.back-link{
+  position:fixed;top:12px;left:16px;z-index:100;
+  color:#f0d48a;text-decoration:none;font-size:15px;font-weight:600;
+  background:rgba(0,0,0,0.45);padding:6px 14px;border-radius:8px;
+  transition:background .2s;
+}
+.back-link:hover{background:rgba(0,0,0,0.7)}
+
+/* ─── HUD ─── */
+.hud{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;justify-content:center;gap:28px;
+  padding:10px 20px;
+  background:linear-gradient(180deg,rgba(30,15,5,0.85) 0%,transparent 100%);
+  font-size:15px;font-weight:600;
+}
+.hud-item{display:flex;align-items:center;gap:6px}
+.hud-item .icon{font-size:20px}
+.hud-val{color:#ffd866;font-size:17px}
+
+/* ─── GAME CANVAS AREA ─── */
+.game-scene{
+  flex:1;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#4a90c2 0%,#6db3e8 35%,#87ceeb 55%,#6b8e23 55.5%,#4a7a1a 100%);
+}
+
+/* clouds */
+.cloud{
+  position:absolute;
+  background:rgba(255,255,255,0.8);
+  border-radius:50%;
+  filter:blur(2px);
+}
+.cloud::before,.cloud::after{
+  content:'';position:absolute;background:inherit;border-radius:50%;
+}
+
+/* ─── SVG SCENE ─── */
+.scene-svg{
+  position:absolute;bottom:0;left:0;width:100%;height:100%;
+}
+
+/* ─── INPUT AREA ─── */
+.input-area{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:linear-gradient(0deg,rgba(20,10,5,0.95) 0%,rgba(30,15,5,0.9) 70%,transparent 100%);
+  padding:18px 20px 22px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.verb-prompt{
+  font-size:26px;font-weight:700;
+  color:#ffd866;
+  text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  min-height:34px;
+  text-align:center;
+}
+.verb-prompt .infinitive{color:#ff9f43;font-style:italic}
+.input-row{display:flex;gap:10px;align-items:center}
+.answer-input{
+  font-size:22px;padding:10px 18px;
+  border:2px solid #8b6914;border-radius:12px;
+  background:rgba(255,255,255,0.1);color:#fff;
+  outline:none;width:280px;text-align:center;
+  font-family:inherit;
+  transition:border-color .2s;
+}
+.answer-input:focus{border-color:#ffd866}
+.answer-input::placeholder{color:rgba(255,255,255,0.3)}
+.fire-btn{
+  font-size:18px;padding:10px 22px;
+  background:linear-gradient(135deg,#d4380d,#a8071a);
+  color:#fff;border:none;border-radius:12px;
+  cursor:pointer;font-weight:700;
+  transition:transform .1s,box-shadow .1s;
+  box-shadow:0 4px 12px rgba(168,7,26,0.4);
+}
+.fire-btn:hover{transform:scale(1.05)}
+.fire-btn:active{transform:scale(0.97)}
+
+.feedback{
+  font-size:16px;min-height:24px;text-align:center;
+  transition:opacity .3s;
+}
+.feedback.correct{color:#7bed9f}
+.feedback.wrong{color:#ff6b6b}
+
+/* ─── SCREENS ─── */
+.screen-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(15,8,3,0.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:30px;text-align:center;
+}
+.screen-overlay.hidden{display:none}
+.screen-overlay h1{
+  font-size:42px;
+  background:linear-gradient(135deg,#ffd866,#ff9f43);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.screen-overlay h2{
+  font-size:28px;color:#ffd866;margin-bottom:8px;
+}
+.screen-overlay p{
+  font-size:18px;color:rgba(255,255,255,0.7);max-width:500px;line-height:1.6;
+}
+.level-buttons{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:10px}
+.level-btn{
+  padding:16px 28px;font-size:17px;font-weight:700;
+  border:2px solid #8b6914;border-radius:14px;
+  background:linear-gradient(135deg,rgba(139,105,20,0.3),rgba(90,60,10,0.3));
+  color:#ffd866;cursor:pointer;
+  transition:all .2s;min-width:200px;
+  font-family:inherit;
+}
+.level-btn:hover{
+  background:linear-gradient(135deg,rgba(139,105,20,0.6),rgba(90,60,10,0.6));
+  transform:translateY(-2px);
+}
+.level-btn .level-name{display:block;font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px;font-weight:400}
+
+.win-stars{font-size:50px;letter-spacing:8px}
+
+/* ─── BOULDER ANIMATION ─── */
+.boulder{
+  position:absolute;
+  width:28px;height:28px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#a0917a,#6b5d4f,#4a3f33);
+  box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4),2px 2px 6px rgba(0,0,0,0.3);
+  z-index:30;
+  pointer-events:none;
+}
+
+/* ─── PARTICLE EFFECTS ─── */
+.particle{
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:35;
+}
+
+/* ─── DAMAGE CRACKS (SVG animated) ─── */
+.crack-line{
+  stroke:#3a2a1a;
+  stroke-width:2;
+  fill:none;
+  opacity:0;
+}
+.crack-line.visible{opacity:1}
+
+/* ─── CATAPULT ARM ANIMATION ─── */
+@keyframes armFire{
+  0%{transform-origin:50% 85%;transform:rotate(0deg)}
+  15%{transform-origin:50% 85%;transform:rotate(-75deg)}
+  40%{transform-origin:50% 85%;transform:rotate(-75deg)}
+  100%{transform-origin:50% 85%;transform:rotate(0deg)}
+}
+.catapult-arm.firing{
+  animation:armFire 0.8s ease-out;
+}
+
+/* ─── MISFIRE ─── */
+@keyframes armMisfire{
+  0%{transform-origin:50% 85%;transform:rotate(0deg)}
+  10%{transform-origin:50% 85%;transform:rotate(-30deg)}
+  30%{transform-origin:50% 85%;transform:rotate(-30deg)}
+  100%{transform-origin:50% 85%;transform:rotate(0deg)}
+}
+.catapult-arm.misfiring{
+  animation:armMisfire 0.6s ease-out;
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:600px){
+  .verb-prompt{font-size:20px}
+  .answer-input{font-size:18px;width:200px;padding:8px 12px}
+  .fire-btn{font-size:15px;padding:8px 16px}
+  .hud{font-size:13px;gap:14px}
+  .screen-overlay h1{font-size:30px}
+  .level-btn{padding:12px 18px;font-size:15px;min-width:160px}
+}
+
+/* ─── ACCENT HELPER BAR ─── */
+.accent-bar{
+  display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
+}
+.accent-btn{
+  padding:4px 10px;font-size:16px;
+  background:rgba(255,255,255,0.1);border:1px solid rgba(139,105,20,0.5);
+  color:#ffd866;border-radius:8px;cursor:pointer;
+  font-family:inherit;transition:background .15s;
+}
+.accent-btn:hover{background:rgba(255,255,255,0.2)}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">&#8592; Jeux</a>
+
+<!-- HUD -->
+<div class="hud" id="hud" style="display:none">
+  <div class="hud-item"><span class="icon">&#x1f9f1;</span> Mur : <span class="hud-val" id="hud-hp">10</span></div>
+  <div class="hud-item"><span class="icon">&#x26AB;</span> Rochers : <span class="hud-val" id="hud-boulders">15</span></div>
+  <div class="hud-item"><span class="icon">&#x2B50;</span> Score : <span class="hud-val" id="hud-score">0</span></div>
+  <div class="hud-item"><span class="icon">&#x1f525;</span> Suite : <span class="hud-val" id="hud-streak">0</span></div>
+</div>
+
+<!-- GAME SCENE -->
+<div class="game-scene" id="gameScene">
+  <svg class="scene-svg" id="sceneSvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax meet">
+    <defs>
+      <!-- stone pattern for wall -->
+      <pattern id="stonePattern" x="0" y="0" width="40" height="25" patternUnits="userSpaceOnUse">
+        <rect width="40" height="25" fill="#8a7b6b"/>
+        <rect x="0" y="0" width="19" height="12" fill="#7a6b5b" rx="1"/>
+        <rect x="21" y="0" width="19" height="12" fill="#8a7a6a" rx="1"/>
+        <rect x="10" y="13" width="19" height="12" fill="#7e6e5e" rx="1"/>
+        <rect x="31" y="13" width="9" height="12" fill="#8a7a6a" rx="1"/>
+        <rect x="0" y="13" width="9" height="12" fill="#7a6b5b" rx="1"/>
+        <line x1="0" y1="12.5" x2="40" y2="12.5" stroke="#5a4a3a" stroke-width="0.7"/>
+        <line x1="20" y1="0" x2="20" y2="12" stroke="#5a4a3a" stroke-width="0.5"/>
+        <line x1="10" y1="13" x2="10" y2="25" stroke="#5a4a3a" stroke-width="0.5"/>
+        <line x1="30" y1="13" x2="30" y2="25" stroke="#5a4a3a" stroke-width="0.5"/>
+      </pattern>
+      <!-- grass -->
+      <linearGradient id="grassGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6b8e23"/>
+        <stop offset="100%" stop-color="#4a6b15"/>
+      </linearGradient>
+      <!-- sky -->
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3a7cc2"/>
+        <stop offset="50%" stop-color="#6db3e8"/>
+        <stop offset="100%" stop-color="#87ceeb"/>
+      </linearGradient>
+      <!-- wood grain -->
+      <linearGradient id="woodGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#6b4423"/>
+        <stop offset="50%" stop-color="#8b5e3c"/>
+        <stop offset="100%" stop-color="#6b4423"/>
+      </linearGradient>
+      <linearGradient id="woodDark" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4a2f14"/>
+        <stop offset="50%" stop-color="#5c3a1e"/>
+        <stop offset="100%" stop-color="#4a2f14"/>
+      </linearGradient>
+    </defs>
+
+    <!-- SKY -->
+    <rect x="0" y="0" width="1000" height="360" fill="url(#skyGrad)"/>
+
+    <!-- CLOUDS -->
+    <g opacity="0.7">
+      <ellipse cx="150" cy="80" rx="60" ry="25" fill="white"/>
+      <ellipse cx="120" cy="70" rx="40" ry="20" fill="white"/>
+      <ellipse cx="185" cy="75" rx="35" ry="18" fill="white"/>
+
+      <ellipse cx="500" cy="50" rx="70" ry="28" fill="white"/>
+      <ellipse cx="465" cy="42" rx="45" ry="22" fill="white"/>
+      <ellipse cx="540" cy="45" rx="40" ry="20" fill="white"/>
+
+      <ellipse cx="800" cy="95" rx="55" ry="22" fill="white"/>
+      <ellipse cx="770" cy="85" rx="35" ry="18" fill="white"/>
+      <ellipse cx="835" cy="88" rx="30" ry="16" fill="white"/>
+
+      <ellipse cx="320" cy="120" rx="50" ry="20" fill="white" opacity="0.5"/>
+      <ellipse cx="680" cy="60" rx="45" ry="18" fill="white" opacity="0.4"/>
+    </g>
+
+    <!-- SUN -->
+    <circle cx="900" cy="70" r="45" fill="#ffd866" opacity="0.9"/>
+    <circle cx="900" cy="70" r="55" fill="#ffd866" opacity="0.15"/>
+
+    <!-- GROUND -->
+    <rect x="0" y="355" width="1000" height="245" fill="url(#grassGrad)"/>
+    <!-- dirt layer -->
+    <rect x="0" y="365" width="1000" height="235" fill="#5a4a2a" opacity="0.3"/>
+
+    <!-- grass tufts -->
+    <g fill="#7ba428" opacity="0.7">
+      <path d="M50,358 Q55,340 60,358"/>
+      <path d="M150,360 Q155,342 160,360"/>
+      <path d="M280,357 Q285,340 290,357"/>
+      <path d="M400,359 Q405,341 410,359"/>
+      <path d="M520,358 Q525,339 530,358"/>
+    </g>
+
+    <!-- ═══ CATAPULT ═══ -->
+    <g id="catapultGroup" transform="translate(120,355)">
+      <!-- base frame -->
+      <rect x="-40" y="-15" width="120" height="18" rx="3" fill="url(#woodGrad)" stroke="#3a2210" stroke-width="1.5"/>
+      <!-- cross beams -->
+      <rect x="-30" y="-30" width="14" height="35" rx="2" fill="url(#woodDark)" stroke="#2a1808" stroke-width="1"/>
+      <rect x="56" y="-30" width="14" height="35" rx="2" fill="url(#woodDark)" stroke="#2a1808" stroke-width="1"/>
+      <!-- axle -->
+      <circle cx="20" cy="-25" r="6" fill="#4a3520" stroke="#2a1808" stroke-width="1.5"/>
+      <circle cx="20" cy="-25" r="2.5" fill="#6b5030"/>
+      <!-- wheels -->
+      <g>
+        <circle cx="-20" cy="6" r="14" fill="#5c3a1e" stroke="#3a2210" stroke-width="2"/>
+        <circle cx="-20" cy="6" r="4" fill="#3a2210"/>
+        <line x1="-20" y1="-8" x2="-20" y2="20" stroke="#3a2210" stroke-width="1.5"/>
+        <line x1="-34" y1="6" x2="-6" y2="6" stroke="#3a2210" stroke-width="1.5"/>
+
+        <circle cx="60" cy="6" r="14" fill="#5c3a1e" stroke="#3a2210" stroke-width="2"/>
+        <circle cx="60" cy="6" r="4" fill="#3a2210"/>
+        <line x1="60" y1="-8" x2="60" y2="20" stroke="#3a2210" stroke-width="1.5"/>
+        <line x1="46" y1="6" x2="74" y2="6" stroke="#3a2210" stroke-width="1.5"/>
+      </g>
+      <!-- ARM (animated part) -->
+      <g class="catapult-arm" id="catapultArm">
+        <!-- arm beam (pivot at bottom, base=20,-25) -->
+        <rect x="16" y="-105" width="8" height="85" rx="2" fill="url(#woodGrad)" stroke="#3a2210" stroke-width="1"/>
+        <!-- cup/sling at top -->
+        <path d="M10,-108 Q20,-118 30,-108 L28,-103 Q20,-108 12,-103 Z" fill="#4a3520" stroke="#3a2210" stroke-width="1"/>
+        <!-- counterweight at bottom -->
+        <rect x="12" y="-28" width="16" height="12" rx="2" fill="#6b5d4f" stroke="#4a3f33" stroke-width="1"/>
+        <!-- boulder in cup (hidden when fired) -->
+        <circle id="boulderInCup" cx="20" cy="-115" r="10" fill="#8a7b6b" stroke="#5a4a3a" stroke-width="1">
+        </circle>
+      </g>
+      <!-- ropes -->
+      <line x1="0" y1="-25" x2="20" y2="-25" stroke="#8b7355" stroke-width="2" opacity="0.7"/>
+      <line x1="40" y1="-25" x2="20" y2="-25" stroke="#8b7355" stroke-width="2" opacity="0.7"/>
+    </g>
+
+    <!-- ═══ CASTLE WALL ═══ -->
+    <g id="castleGroup" transform="translate(700,130)">
+      <!-- main wall -->
+      <rect id="castleWall" x="0" y="0" width="180" height="225" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="2" rx="2"/>
+      <!-- battlements -->
+      <rect x="-5" y="-20" width="30" height="25" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="1.5"/>
+      <rect x="35" y="-20" width="30" height="25" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="1.5"/>
+      <rect x="75" y="-20" width="30" height="25" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="1.5"/>
+      <rect x="115" y="-20" width="30" height="25" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="1.5"/>
+      <rect x="155" y="-20" width="30" height="25" fill="url(#stonePattern)" stroke="#4a3a2a" stroke-width="1.5"/>
+      <!-- wall shadow/depth -->
+      <rect x="3" y="3" width="174" height="219" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="4" rx="2"/>
+      <!-- arrow slits -->
+      <rect x="40" y="60" width="8" height="30" rx="4" fill="#2a1a0a"/>
+      <rect x="90" y="60" width="8" height="30" rx="4" fill="#2a1a0a"/>
+      <rect x="140" y="60" width="8" height="30" rx="4" fill="#2a1a0a"/>
+      <!-- gate -->
+      <path d="M60,225 L60,160 Q90,140 120,160 L120,225 Z" fill="#3a2a1a" stroke="#2a1808" stroke-width="2"/>
+      <rect x="60" y="160" width="60" height="65" fill="none" stroke="#4a3a2a" stroke-width="1" opacity="0.5"/>
+      <!-- gate bars -->
+      <line x1="75" y1="160" x2="75" y2="225" stroke="#5a4a3a" stroke-width="1.5"/>
+      <line x1="90" y1="150" x2="90" y2="225" stroke="#5a4a3a" stroke-width="1.5"/>
+      <line x1="105" y1="160" x2="105" y2="225" stroke="#5a4a3a" stroke-width="1.5"/>
+      <line x1="60" y1="180" x2="120" y2="180" stroke="#5a4a3a" stroke-width="1.5"/>
+      <line x1="60" y1="200" x2="120" y2="200" stroke="#5a4a3a" stroke-width="1.5"/>
+      <!-- flag pole -->
+      <line x1="90" y1="-20" x2="90" y2="-65" stroke="#5a4a3a" stroke-width="2.5"/>
+      <!-- flag -->
+      <path d="M90,-65 L130,-55 L90,-42 Z" fill="#c0392b" stroke="#922b21" stroke-width="1">
+        <animate attributeName="d" values="M90,-65 L130,-55 L90,-42 Z;M90,-65 L128,-53 L90,-42 Z;M90,-65 L130,-55 L90,-42 Z" dur="2s" repeatCount="indefinite"/>
+      </path>
+
+      <!-- CRACK OVERLAY GROUP -->
+      <g id="cracksGroup">
+        <path class="crack-line" d="M30,40 L50,55 L40,80 L55,95" stroke-width="2.5"/>
+        <path class="crack-line" d="M140,30 L125,50 L135,70" stroke-width="2"/>
+        <path class="crack-line" d="M80,100 L95,120 L80,140 L90,160" stroke-width="2.5"/>
+        <path class="crack-line" d="M150,110 L140,130 L155,150 L145,170" stroke-width="2"/>
+        <path class="crack-line" d="M20,130 L40,145 L30,165 L45,180" stroke-width="2"/>
+        <path class="crack-line" d="M100,20 L110,45 L95,55" stroke-width="2"/>
+        <path class="crack-line" d="M60,180 L75,195 L65,210" stroke-width="2"/>
+        <path class="crack-line" d="M120,170 L135,185 L125,200 L140,215" stroke-width="2.5"/>
+        <path class="crack-line" d="M10,80 L25,95 L15,110" stroke-width="2"/>
+        <path class="crack-line" d="M160,200 L150,215 L165,225" stroke-width="2"/>
+      </g>
+    </g>
+
+    <!-- Banner on wall with HP -->
+    <g id="hpBanner" transform="translate(755,118)">
+      <rect x="0" y="0" width="70" height="28" rx="4" fill="rgba(0,0,0,0.6)"/>
+      <text id="hpText" x="35" y="19" text-anchor="middle" fill="#ff6b6b" font-size="16" font-weight="bold">10 PV</text>
+    </g>
+  </svg>
+</div>
+
+<!-- INPUT AREA -->
+<div class="input-area" id="inputArea" style="display:none">
+  <div class="verb-prompt" id="verbPrompt"></div>
+  <div class="accent-bar" id="accentBar">
+    <button class="accent-btn" type="button" data-char="é">é</button>
+    <button class="accent-btn" type="button" data-char="è">è</button>
+    <button class="accent-btn" type="button" data-char="ê">ê</button>
+    <button class="accent-btn" type="button" data-char="ë">ë</button>
+    <button class="accent-btn" type="button" data-char="à">à</button>
+    <button class="accent-btn" type="button" data-char="â">â</button>
+    <button class="accent-btn" type="button" data-char="î">î</button>
+    <button class="accent-btn" type="button" data-char="ô">ô</button>
+    <button class="accent-btn" type="button" data-char="ù">ù</button>
+    <button class="accent-btn" type="button" data-char="ç">ç</button>
+  </div>
+  <div class="input-row">
+    <input type="text" class="answer-input" id="answerInput" placeholder="Ta conjugaison..." autocomplete="off" autocapitalize="none" spellcheck="false">
+    <button class="fire-btn" id="fireBtn">Tirer !</button>
+  </div>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<!-- TITLE SCREEN -->
+<div class="screen-overlay" id="titleScreen">
+  <h1>Catapulte de Conjugaison</h1>
+  <p>Conjugue les verbes correctement pour lancer des rochers et d&#233;truire le ch&#226;teau !</p>
+  <div class="level-buttons">
+    <button class="level-btn" data-level="1">
+      Niveau 1
+      <span class="level-name">Pr&#233;sent &mdash; verbes en -er</span>
+    </button>
+    <button class="level-btn" data-level="2">
+      Niveau 2
+      <span class="level-name">Pr&#233;sent &mdash; -ir, -re, irr&#233;guliers</span>
+    </button>
+    <button class="level-btn" data-level="3">
+      Niveau 3
+      <span class="level-name">Pass&#233; compos&#233; &amp; Futur simple</span>
+    </button>
+  </div>
+</div>
+
+<!-- WIN SCREEN -->
+<div class="screen-overlay hidden" id="winScreen">
+  <div class="win-stars">&#9733;&#9733;&#9733;</div>
+  <h2>Victoire !</h2>
+  <p id="winMsg">Tu as d&#233;truit le ch&#226;teau !</p>
+  <div class="level-buttons">
+    <button class="level-btn" id="winReplay">Rejouer</button>
+    <button class="level-btn" id="winMenu">Menu</button>
+  </div>
+</div>
+
+<!-- LOSE SCREEN -->
+<div class="screen-overlay hidden" id="loseScreen">
+  <h2>Plus de rochers !</h2>
+  <p id="loseMsg">Le ch&#226;teau tient encore. R&#233;essaie !</p>
+  <div class="level-buttons">
+    <button class="level-btn" id="loseRetry">R&#233;essayer</button>
+    <button class="level-btn" id="loseMenu">Menu</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════════════════════════════════════
+   VERB DATA
+   ═══════════════════════════════════════════════ */
+const PRONOUNS = ["je","tu","il/elle","nous","vous","ils/elles"];
+
+// Helper: build conjugation object from array [je,tu,il,nous,vous,ils]
+function conj(infinitive, forms, tense){
+  tense = tense || "présent";
+  var map = {};
+  for(var i=0;i<PRONOUNS.length;i++){
+    map[PRONOUNS[i]] = forms[i];
+  }
+  return {infinitive:infinitive, tense:tense, forms:map};
+}
+
+// ── PRÉSENT: -er verbs ──
+var erVerbs = [
+  conj("manger",["mange","manges","mange","mangeons","mangez","mangent"]),
+  conj("jouer",["joue","joues","joue","jouons","jouez","jouent"]),
+  conj("parler",["parle","parles","parle","parlons","parlez","parlent"]),
+  conj("chanter",["chante","chantes","chante","chantons","chantez","chantent"]),
+  conj("regarder",["regarde","regardes","regarde","regardons","regardez","regardent"]),
+  conj("écouter",["écoute","écoutes","écoute","écoutons","écoutez","écoutent"]),
+  conj("marcher",["marche","marches","marche","marchons","marchez","marchent"]),
+  conj("danser",["danse","danses","danse","dansons","dansez","dansent"]),
+  conj("dessiner",["dessine","dessines","dessine","dessinons","dessinez","dessinent"]),
+  conj("aimer",["aime","aimes","aime","aimons","aimez","aiment"])
+];
+
+// ── PRÉSENT: -ir, -re, irregular ──
+var irReVerbs = [
+  conj("finir",["finis","finis","finit","finissons","finissez","finissent"]),
+  conj("choisir",["choisis","choisis","choisit","choisissons","choisissez","choisissent"]),
+  conj("vendre",["vends","vends","vend","vendons","vendez","vendent"]),
+  conj("prendre",["prends","prends","prend","prenons","prenez","prennent"]),
+  conj("faire",["fais","fais","fait","faisons","faites","font"]),
+  conj("aller",["vais","vas","va","allons","allez","vont"]),
+  conj("être",["suis","es","est","sommes","êtes","sont"]),
+  conj("avoir",["ai","as","a","avons","avez","ont"])
+];
+
+// ── PASSÉ COMPOSÉ (with avoir, simplified — no agreement for now) ──
+var pcVerbs = [
+  conj("manger",["ai mangé","as mangé","a mangé","avons mangé","avez mangé","ont mangé"],"passé composé"),
+  conj("jouer",["ai joué","as joué","a joué","avons joué","avez joué","ont joué"],"passé composé"),
+  conj("parler",["ai parlé","as parlé","a parlé","avons parlé","avez parlé","ont parlé"],"passé composé"),
+  conj("finir",["ai fini","as fini","a fini","avons fini","avez fini","ont fini"],"passé composé"),
+  conj("choisir",["ai choisi","as choisi","a choisi","avons choisi","avez choisi","ont choisi"],"passé composé"),
+  conj("vendre",["ai vendu","as vendu","a vendu","avons vendu","avez vendu","ont vendu"],"passé composé"),
+  conj("prendre",["ai pris","as pris","a pris","avons pris","avez pris","ont pris"],"passé composé"),
+  conj("faire",["ai fait","as fait","a fait","avons fait","avez fait","ont fait"],"passé composé"),
+  conj("être",["ai été","as été","a été","avons été","avez été","ont été"],"passé composé"),
+  conj("avoir",["ai eu","as eu","a eu","avons eu","avez eu","ont eu"],"passé composé"),
+  // aller uses être as auxiliary
+  conj("aller",["suis allé(e)","es allé(e)","est allé(e)","sommes allé(e)s","êtes allé(e)s","sont allé(e)s"],"passé composé"),
+  conj("danser",["ai dansé","as dansé","a dansé","avons dansé","avez dansé","ont dansé"],"passé composé"),
+  conj("chanter",["ai chanté","as chanté","a chanté","avons chanté","avez chanté","ont chanté"],"passé composé")
+];
+
+// ── FUTUR SIMPLE ──
+var futVerbs = [
+  conj("manger",["mangerai","mangeras","mangera","mangerons","mangerez","mangeront"],"futur simple"),
+  conj("jouer",["jouerai","joueras","jouera","jouerons","jouerez","joueront"],"futur simple"),
+  conj("parler",["parlerai","parleras","parlera","parlerons","parlerez","parleront"],"futur simple"),
+  conj("finir",["finirai","finiras","finira","finirons","finirez","finiront"],"futur simple"),
+  conj("choisir",["choisirai","choisiras","choisira","choisirons","choisirez","choisiront"],"futur simple"),
+  conj("vendre",["vendrai","vendras","vendra","vendrons","vendrez","vendront"],"futur simple"),
+  conj("prendre",["prendrai","prendras","prendra","prendrons","prendrez","prendront"],"futur simple"),
+  conj("faire",["ferai","feras","fera","ferons","ferez","feront"],"futur simple"),
+  conj("aller",["irai","iras","ira","irons","irez","iront"],"futur simple"),
+  conj("être",["serai","seras","sera","serons","serez","seront"],"futur simple"),
+  conj("avoir",["aurai","auras","aura","aurons","aurez","auront"],"futur simple"),
+  conj("danser",["danserai","danseras","dansera","danserons","danserez","danseront"],"futur simple"),
+  conj("chanter",["chanterai","chanteras","chantera","chanterons","chanterez","chanteront"],"futur simple")
+];
+
+var LEVELS = {
+  1: erVerbs,
+  2: irReVerbs,
+  3: pcVerbs.concat(futVerbs)
+};
+
+/* ═══════════════════════════════════════════════
+   SPACED REPETITION
+   ═══════════════════════════════════════════════ */
+var SR_KEY = "conjCatapult_sr";
+
+function loadSR(){
+  try{
+    var d = localStorage.getItem(SR_KEY);
+    return d ? JSON.parse(d) : {};
+  }catch(e){return {}}
+}
+function saveSR(data){
+  try{localStorage.setItem(SR_KEY,JSON.stringify(data))}catch(e){}
+}
+
+function srKey(verb,pronoun,tense){
+  return tense + "|" + verb + "|" + pronoun;
+}
+
+function recordAnswer(verb,pronoun,tense,correct){
+  var data = loadSR();
+  var k = srKey(verb,pronoun,tense);
+  if(!data[k]) data[k] = {wrong:0,right:0,last:0};
+  if(correct) data[k].right++;
+  else data[k].wrong++;
+  data[k].last = Date.now();
+  saveSR(data);
+}
+
+// Pick a verb+pronoun combo, weighted by weakness
+function pickQuestion(verbList){
+  var data = loadSR();
+  var candidates = [];
+  for(var v=0;v<verbList.length;v++){
+    for(var p=0;p<PRONOUNS.length;p++){
+      var tense = verbList[v].tense;
+      var k = srKey(verbList[v].infinitive,PRONOUNS[p],tense);
+      var entry = data[k];
+      var weight = 1;
+      if(entry){
+        // More wrong = higher weight
+        weight = 1 + entry.wrong * 3 - entry.right * 0.5;
+        if(weight < 0.3) weight = 0.3;
+        // Boost if recently wrong
+        if(entry.wrong > entry.right) weight += 2;
+      } else {
+        // Never seen = slight boost
+        weight = 2;
+      }
+      candidates.push({verb:verbList[v], pronoun:PRONOUNS[p], weight:weight});
+    }
+  }
+  // Weighted random selection
+  var total = 0;
+  for(var i=0;i<candidates.length;i++) total += candidates[i].weight;
+  var r = Math.random() * total;
+  var acc = 0;
+  for(var i=0;i<candidates.length;i++){
+    acc += candidates[i].weight;
+    if(r <= acc) return candidates[i];
+  }
+  return candidates[candidates.length-1];
+}
+
+/* ═══════════════════════════════════════════════
+   GAME STATE
+   ═══════════════════════════════════════════════ */
+var state = {
+  level: 1,
+  wallHP: 10,
+  maxHP: 10,
+  boulders: 15,
+  maxBoulders: 15,
+  score: 0,
+  streak: 0,
+  currentQ: null,
+  animating: false
+};
+
+/* ═══════════════════════════════════════════════
+   DOM REFERENCES
+   ═══════════════════════════════════════════════ */
+var $hud = document.getElementById("hud");
+var $hudHP = document.getElementById("hud-hp");
+var $hudBoulders = document.getElementById("hud-boulders");
+var $hudScore = document.getElementById("hud-score");
+var $hudStreak = document.getElementById("hud-streak");
+var $scene = document.getElementById("gameScene");
+var $svg = document.getElementById("sceneSvg");
+var $inputArea = document.getElementById("inputArea");
+var $prompt = document.getElementById("verbPrompt");
+var $input = document.getElementById("answerInput");
+var $fireBtn = document.getElementById("fireBtn");
+var $feedback = document.getElementById("feedback");
+var $arm = document.getElementById("catapultArm");
+var $boulderCup = document.getElementById("boulderInCup");
+var $hpText = document.getElementById("hpText");
+var $cracksGroup = document.getElementById("cracksGroup");
+var $titleScreen = document.getElementById("titleScreen");
+var $winScreen = document.getElementById("winScreen");
+var $loseScreen = document.getElementById("loseScreen");
+var $winMsg = document.getElementById("winMsg");
+var $loseMsg = document.getElementById("loseMsg");
+
+/* ═══════════════════════════════════════════════
+   SCREEN MANAGEMENT
+   ═══════════════════════════════════════════════ */
+function showScreen(id){
+  $titleScreen.classList.add("hidden");
+  $winScreen.classList.add("hidden");
+  $loseScreen.classList.add("hidden");
+  if(id) document.getElementById(id).classList.remove("hidden");
+}
+
+function showGame(){
+  showScreen(null);
+  $hud.style.display = "flex";
+  $inputArea.style.display = "";
+}
+function hideGame(){
+  $hud.style.display = "none";
+  $inputArea.style.display = "none";
+}
+
+/* ═══════════════════════════════════════════════
+   GAME LOGIC
+   ═══════════════════════════════════════════════ */
+function startLevel(level){
+  state.level = level;
+  state.wallHP = 10;
+  state.maxHP = 10;
+  state.boulders = 15;
+  state.maxBoulders = 15;
+  state.score = 0;
+  state.streak = 0;
+  state.animating = false;
+  resetCracks();
+  updateHUD();
+  showGame();
+  nextQuestion();
+}
+
+function updateHUD(){
+  $hudHP.textContent = state.wallHP;
+  $hudBoulders.textContent = state.boulders;
+  $hudScore.textContent = state.score;
+  $hudStreak.textContent = state.streak;
+  $hpText.textContent = state.wallHP + " PV";
+}
+
+function resetCracks(){
+  var cracks = $cracksGroup.querySelectorAll(".crack-line");
+  for(var i=0;i<cracks.length;i++){
+    cracks[i].classList.remove("visible");
+  }
+}
+
+function showCracks(){
+  var cracks = $cracksGroup.querySelectorAll(".crack-line");
+  var dmg = state.maxHP - state.wallHP; // how many hits taken
+  // Show cracks proportional to damage
+  for(var i=0;i<cracks.length;i++){
+    if(i < dmg) cracks[i].classList.add("visible");
+    else cracks[i].classList.remove("visible");
+  }
+}
+
+function nextQuestion(){
+  if(state.wallHP <= 0){
+    winRound();
+    return;
+  }
+  if(state.boulders <= 0){
+    loseRound();
+    return;
+  }
+  var q = pickQuestion(LEVELS[state.level]);
+  state.currentQ = q;
+
+  // Build prompt
+  $prompt.textContent = "";
+  var pronounSpan = document.createElement("span");
+  pronounSpan.textContent = q.pronoun;
+  var sep = document.createTextNode(" + ");
+  var verbSpan = document.createElement("span");
+  verbSpan.className = "infinitive";
+  verbSpan.textContent = q.verb.infinitive;
+
+  $prompt.appendChild(pronounSpan);
+  $prompt.appendChild(sep);
+  $prompt.appendChild(verbSpan);
+
+  if(q.verb.tense !== "présent"){
+    var tenseSpan = document.createTextNode("  (" + q.verb.tense + ")");
+    $prompt.appendChild(tenseSpan);
+  }
+
+  $input.value = "";
+  $feedback.textContent = "";
+  $feedback.className = "feedback";
+  $boulderCup.style.display = "";
+  $input.focus();
+}
+
+// Normalize answer for comparison (trim, lowercase, collapse spaces)
+function normalize(s){
+  return s.trim().toLowerCase().replace(/\s+/g," ").replace(/'/g,"'");
+}
+
+// For passé composé with aller, accept "suis allé" or "suis allée" or "suis allé(e)"
+function checkAnswer(given, expected){
+  var g = normalize(given);
+  var e = normalize(expected);
+  if(g === e) return true;
+  // Strip parenthetical gender markers for flexible matching
+  var eFlexible = e.replace(/\(e\)/g,"").replace(/\(e\)s/g,"s");
+  if(g === eFlexible) return true;
+  // Also accept with 'e' filled in
+  var eWithE = e.replace(/\(e\)/g,"e").replace(/\(e\)s/g,"es");
+  if(g === eWithE) return true;
+  // Accept without any e at all for masculine
+  var eNoE = e.replace(/\(e\)/g,"");
+  if(g === eNoE) return true;
+  return false;
+}
+
+function handleSubmit(){
+  if(state.animating) return;
+  if(!state.currentQ) return;
+
+  var answer = $input.value;
+  if(!answer.trim()) return;
+
+  var q = state.currentQ;
+  var expected = q.verb.forms[q.pronoun];
+  var correct = checkAnswer(answer, expected);
+
+  state.boulders--;
+  state.animating = true;
+
+  // Handle je -> j' display for feedback
+  var displayPronoun = q.pronoun;
+  // Check if verb starts with vowel for je -> j'
+  var vowels = "aeéèêëiîïoôuùûyâàh";
+  if(q.pronoun === "je" && vowels.indexOf(expected.charAt(0).toLowerCase()) !== -1){
+    displayPronoun = "j'";
+  }
+
+  if(correct){
+    state.wallHP--;
+    state.score += 10 + state.streak * 2;
+    state.streak++;
+    recordAnswer(q.verb.infinitive, q.pronoun, q.verb.tense, true);
+    fireBoulder(true, function(){
+      showCracks();
+      $feedback.textContent = "Bravo ! " + displayPronoun + " " + expected;
+      $feedback.className = "feedback correct";
+      updateHUD();
+      state.animating = false;
+      setTimeout(nextQuestion, 1200);
+    });
+  } else {
+    state.streak = 0;
+    recordAnswer(q.verb.infinitive, q.pronoun, q.verb.tense, false);
+    fireBoulder(false, function(){
+      $feedback.textContent = "La bonne réponse : " + displayPronoun + " " + expected;
+      $feedback.className = "feedback wrong";
+      updateHUD();
+      state.animating = false;
+      setTimeout(nextQuestion, 2200);
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════ */
+function fireBoulder(hit, callback){
+  $boulderCup.style.display = "none";
+
+  // Animate arm
+  $arm.classList.remove("firing","misfiring");
+  void $arm.offsetWidth; // reflow
+  $arm.classList.add(hit ? "firing" : "misfiring");
+
+  // Get catapult cup position in scene coordinates
+  // Cup is at approximately (140, 240) in SVG coords
+  var startX = 140;
+  var startY = 240;
+
+  // Target: castle wall center ~(790, 280) for hit, ground ~(400, 370) for miss
+  var endX = hit ? 780 : 350 + Math.random()*100;
+  var endY = hit ? 200 + Math.random()*100 : 360;
+
+  // Create boulder element in SVG
+  var boulder = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  boulder.setAttribute("cx", startX);
+  boulder.setAttribute("cy", startY);
+  boulder.setAttribute("r", "10");
+  boulder.setAttribute("fill", "#8a7b6b");
+  boulder.setAttribute("stroke", "#5a4a3a");
+  boulder.setAttribute("stroke-width", "1.5");
+  boulder.style.filter = "drop-shadow(2px 2px 3px rgba(0,0,0,0.4))";
+  $svg.appendChild(boulder);
+
+  var duration = hit ? 700 : 500;
+  var startTime = null;
+  var peakY = Math.min(startY, endY) - 180 - Math.random()*60;
+
+  function animateBoulder(timestamp){
+    if(!startTime) startTime = timestamp;
+    var t = (timestamp - startTime) / duration;
+    if(t > 1) t = 1;
+
+    // Parabolic arc
+    var x = startX + (endX - startX) * t;
+    var y = startY + (endY - startY) * t + (peakY - startY) * 4 * t * (1 - t) * -1;
+    // Actually, let's do a proper arc:
+    // y = start + 2*(peak-start)*t at t=0.5 peak
+    var midY = peakY;
+    y = (1-t)*(1-t)*startY + 2*(1-t)*t*midY + t*t*endY;
+
+    boulder.setAttribute("cx", x);
+    boulder.setAttribute("cy", y);
+
+    // Spin effect via slight size change
+    var scale = 1 + 0.1 * Math.sin(t * Math.PI * 4);
+    boulder.setAttribute("r", 10 * scale);
+
+    if(t < 1){
+      requestAnimationFrame(animateBoulder);
+    } else {
+      $svg.removeChild(boulder);
+      if(hit){
+        spawnImpactParticles(endX, endY);
+        shakeWall();
+      } else {
+        spawnDustParticles(endX, endY);
+      }
+      callback();
+    }
+  }
+
+  // Delay start slightly so arm moves first
+  setTimeout(function(){
+    requestAnimationFrame(animateBoulder);
+  }, 120);
+}
+
+function shakeWall(){
+  var castle = document.getElementById("castleGroup");
+  var orig = castle.getAttribute("transform");
+  var shakes = [{x:4,y:0},{x:-4,y:2},{x:3,y:-2},{x:-2,y:1},{x:0,y:0}];
+  var i = 0;
+  function doShake(){
+    if(i >= shakes.length){
+      castle.setAttribute("transform", orig);
+      return;
+    }
+    castle.setAttribute("transform", "translate(" + (700+shakes[i].x) + "," + (130+shakes[i].y) + ")");
+    i++;
+    setTimeout(doShake, 50);
+  }
+  doShake();
+}
+
+function spawnImpactParticles(cx, cy){
+  var count = 12;
+  for(var i=0;i<count;i++){
+    spawnParticle(cx, cy, true);
+  }
+}
+
+function spawnDustParticles(cx, cy){
+  var count = 6;
+  for(var i=0;i<count;i++){
+    spawnParticle(cx, cy, false);
+  }
+}
+
+function spawnParticle(cx, cy, isStone){
+  var particle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  var size = isStone ? 2 + Math.random() * 5 : 3 + Math.random() * 6;
+  var color = isStone ?
+    ["#8a7b6b","#6b5d4f","#a09080","#5a4a3a"][Math.floor(Math.random()*4)] :
+    ["#b09070","#c0a080","#8a7a5a"][Math.floor(Math.random()*3)];
+
+  particle.setAttribute("cx", cx);
+  particle.setAttribute("cy", cy);
+  particle.setAttribute("r", size);
+  particle.setAttribute("fill", color);
+  particle.setAttribute("opacity","1");
+  $svg.appendChild(particle);
+
+  var vx = (Math.random()-0.5) * (isStone?10:6);
+  var vy = -Math.random() * (isStone?8:4);
+  var gravity = 0.3;
+  var life = 0;
+  var maxLife = 30 + Math.random()*20;
+
+  function animateP(){
+    life++;
+    if(life > maxLife){
+      if(particle.parentNode) particle.parentNode.removeChild(particle);
+      return;
+    }
+    vx *= 0.96;
+    vy += gravity;
+    var px = parseFloat(particle.getAttribute("cx")) + vx;
+    var py = parseFloat(particle.getAttribute("cy")) + vy;
+    particle.setAttribute("cx", px);
+    particle.setAttribute("cy", py);
+    particle.setAttribute("opacity", 1 - life/maxLife);
+    particle.setAttribute("r", size * (1 - life/maxLife * 0.5));
+    requestAnimationFrame(animateP);
+  }
+  requestAnimationFrame(animateP);
+}
+
+/* ═══════════════════════════════════════════════
+   WIN / LOSE
+   ═══════════════════════════════════════════════ */
+function winRound(){
+  hideGame();
+  var stars = state.boulders >= 10 ? 3 : state.boulders >= 5 ? 2 : 1;
+  var starStr = "";
+  for(var i=0;i<3;i++) starStr += i < stars ? "\u2605" : "\u2606";
+  document.querySelector(".win-stars").textContent = starStr;
+  $winMsg.textContent = "Score : " + state.score + " | Rochers restants : " + state.boulders;
+  showScreen("winScreen");
+}
+
+function loseRound(){
+  hideGame();
+  $loseMsg.textContent = "Il restait " + state.wallHP + " PV au château. Continue à pratiquer !";
+  showScreen("loseScreen");
+}
+
+/* ═══════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════ */
+
+// Level select buttons
+var levelBtns = document.querySelectorAll(".level-btn[data-level]");
+for(var i=0;i<levelBtns.length;i++){
+  levelBtns[i].addEventListener("click", function(){
+    startLevel(parseInt(this.getAttribute("data-level")));
+  });
+}
+
+// Fire button
+$fireBtn.addEventListener("click", handleSubmit);
+
+// Enter key
+$input.addEventListener("keydown", function(e){
+  if(e.key === "Enter") handleSubmit();
+});
+
+// Accent buttons
+var accentBtns = document.querySelectorAll(".accent-btn");
+for(var i=0;i<accentBtns.length;i++){
+  accentBtns[i].addEventListener("click", function(){
+    var ch = this.getAttribute("data-char");
+    var pos = $input.selectionStart;
+    var val = $input.value;
+    $input.value = val.slice(0,pos) + ch + val.slice(pos);
+    $input.focus();
+    $input.selectionStart = $input.selectionEnd = pos + ch.length;
+  });
+}
+
+// Win/Lose screen buttons
+document.getElementById("winReplay").addEventListener("click", function(){
+  startLevel(state.level);
+});
+document.getElementById("winMenu").addEventListener("click", function(){
+  hideGame();
+  showScreen("titleScreen");
+});
+document.getElementById("loseRetry").addEventListener("click", function(){
+  startLevel(state.level);
+});
+document.getElementById("loseMenu").addEventListener("click", function(){
+  hideGame();
+  showScreen("titleScreen");
+});
+
+// Show title screen on load
+hideGame();
+showScreen("titleScreen");
+
+})();
+</script>
+</body>
+</html>

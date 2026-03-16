@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Line Ninja</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes petalFall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--drift), 120vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes starPop {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; }
+  60% { transform: scale(1.3) rotate(200deg); opacity: 1; }
+  100% { transform: scale(1) rotate(180deg); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes celebrateBounce {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.15) rotate(-5deg); }
+  50% { transform: scale(1.2) rotate(5deg); }
+  75% { transform: scale(1.1) rotate(-3deg); }
+}
+
+@keyframes headScratch {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg) translateX(-2px); }
+  75% { transform: rotate(8deg) translateX(2px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,215,0,0.4)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255,215,0,0.8)); }
+}
+
+@keyframes bambooSway {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes resultLine {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes ninjaEntrance {
+  0% { transform: translateY(40px) scale(0.5); opacity: 0; }
+  60% { transform: translateY(-10px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #2d1b4e 0%, #4a2d6e 20%, #e88ba7 50%, #f4b8c1 65%, #fce4ec 80%, #e8f5e9 100%);
+  color: #2d1b4e;
+  position: relative;
+}
+
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.game-container {
+  position: relative;
+  z-index: 1;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.back-link {
+  align-self: flex-start;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 15px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s;
+  margin-bottom: 10px;
+}
+.back-link:hover { background: rgba(255,255,255,0.25); transform: translateX(-3px); }
+
+.title-area {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.title-area h1 {
+  font-size: 40px;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(200,100,150,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  letter-spacing: 2px;
+}
+.title-area .subtitle {
+  color: rgba(255,255,255,0.8);
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+/* Ninja character */
+.ninja-wrapper {
+  margin: 10px 0;
+  animation: ninjaEntrance 0.6s ease-out;
+}
+.ninja-wrapper.celebrate { animation: celebrateBounce 0.6s ease-in-out; }
+.ninja-wrapper.confused { animation: headScratch 0.5s ease-in-out 3; }
+
+/* Score bar */
+.score-bar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 10px 28px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255,255,255,0.25);
+  flex-wrap: wrap;
+}
+.score-item { text-align: center; }
+.score-item .label { font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1px; }
+.score-item .value { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.score-item .value.gold { color: #ffd700; }
+
+/* Main panel */
+.panel {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(45,27,78,0.15), 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.6);
+  animation: slideDown 0.4s ease-out;
+}
+
+/* Level select */
+.level-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+.level-card {
+  background: linear-gradient(135deg, #f8f0ff, #fff5f5);
+  border: 2px solid #e8d5f5;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.level-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(150,100,200,0.2); border-color: #c9a7e8; }
+.level-card.locked { opacity: 0.5; cursor: not-allowed; }
+.level-card .level-num { font-size: 13px; color: #9b6dc4; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.level-card .level-name { font-size: 20px; font-weight: 700; color: #4a2d6e; margin: 6px 0; }
+.level-card .level-range { font-size: 14px; color: #7c6a8a; }
+.level-card .level-best { font-size: 12px; color: #b09ac0; margin-top: 8px; }
+.level-card .level-best .star-count { color: #ffa726; font-weight: 600; }
+
+/* Number line */
+.number-line-area {
+  margin: 24px 0;
+  position: relative;
+}
+.number-line-container {
+  position: relative;
+  height: 100px;
+  margin: 20px 30px 10px 30px;
+}
+.number-line-beam {
+  position: absolute;
+  top: 40px;
+  left: 0; right: 0;
+  height: 14px;
+  background: linear-gradient(180deg, #8d6e4a, #a67c52, #c9a06c, #a67c52);
+  border-radius: 7px;
+  box-shadow: 0 3px 8px rgba(100,60,20,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+/* Wood grain lines */
+.number-line-beam::before {
+  content: '';
+  position: absolute;
+  top: 3px; left: 10px; right: 10px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(139,90,43,0.3) 20px, rgba(139,90,43,0.3) 21px);
+}
+.number-line-beam::after {
+  content: '';
+  position: absolute;
+  top: 8px; left: 20px; right: 20px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(139,90,43,0.2) 30px, rgba(139,90,43,0.2) 31px);
+}
+
+.endpoint {
+  position: absolute;
+  top: 60px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #4a2d6e;
+  transform: translateX(-50%);
+}
+.endpoint.left { left: 0; }
+.endpoint.right { right: 0; transform: translateX(50%); }
+
+.tick-mark {
+  position: absolute;
+  top: 34px;
+  width: 2px;
+  height: 26px;
+  background: rgba(100,60,20,0.5);
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+.tick-mark.major {
+  height: 30px;
+  top: 32px;
+  width: 2px;
+  background: rgba(80,40,10,0.7);
+}
+.tick-label {
+  position: absolute;
+  top: 66px;
+  font-size: 11px;
+  color: #7c6a8a;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Shuriken marker */
+.mystery-marker {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  z-index: 5;
+  animation: float 2s ease-in-out infinite;
+  cursor: default;
+}
+.mystery-marker svg { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+
+/* Answer markers */
+.answer-marker {
+  position: absolute;
+  top: 24px;
+  transform: translateX(-50%);
+  z-index: 4;
+  transition: all 0.5s ease;
+}
+.guess-line {
+  position: absolute;
+  top: 15px;
+  width: 3px;
+  height: 36px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+.guess-line.player { background: #4285f4; }
+.guess-line.actual { background: #ea4335; }
+
+.guess-label {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  z-index: 6;
+}
+.guess-label.player { background: #4285f4; color: #fff; }
+.guess-label.actual { background: #ea4335; color: #fff; }
+
+/* Input area */
+.input-area {
+  text-align: center;
+  margin-top: 16px;
+}
+.input-area label {
+  display: block;
+  font-size: 18px;
+  color: #4a2d6e;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.guess-input {
+  font-size: 28px;
+  text-align: center;
+  width: 160px;
+  padding: 10px 16px;
+  border: 3px solid #d4bde8;
+  border-radius: 14px;
+  outline: none;
+  background: #faf5ff;
+  color: #4a2d6e;
+  font-weight: 700;
+  transition: border-color 0.3s;
+}
+.guess-input:focus { border-color: #9b6dc4; box-shadow: 0 0 0 4px rgba(155,109,196,0.15); }
+
+.btn {
+  display: inline-block;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+  color: #fff;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #9b6dc4);
+  box-shadow: 0 4px 15px rgba(124,58,237,0.3);
+}
+.btn-primary:hover { box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
+
+.btn-gold {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  box-shadow: 0 4px 15px rgba(245,158,11,0.3);
+  color: #7c2d12;
+}
+
+.btn-green {
+  background: linear-gradient(135deg, #059669, #34d399);
+  box-shadow: 0 4px 15px rgba(5,150,105,0.3);
+}
+
+.btn-small { padding: 8px 20px; font-size: 14px; border-radius: 10px; }
+
+/* Result display */
+.result-display {
+  text-align: center;
+  padding: 16px;
+  animation: fadeIn 0.4s ease-out;
+}
+.result-display .result-text {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.result-display .result-detail {
+  font-size: 15px;
+  color: #7c6a8a;
+  margin-bottom: 12px;
+}
+.result-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.result-stars .star {
+  animation: starPop 0.5s ease-out backwards;
+}
+.result-stars .star:nth-child(2) { animation-delay: 0.15s; }
+.result-stars .star:nth-child(3) { animation-delay: 0.3s; }
+
+/* Level complete */
+.level-complete {
+  text-align: center;
+  animation: slideDown 0.5s ease-out;
+}
+.level-complete h2 { font-size: 28px; color: #4a2d6e; margin-bottom: 8px; }
+.level-complete .rank-text { font-size: 18px; color: #9b6dc4; margin-bottom: 16px; }
+.final-stars { font-size: 36px; color: #ffa726; font-weight: 700; margin: 10px 0; }
+.final-stars .total-label { font-size: 14px; color: #7c6a8a; font-weight: 400; }
+
+/* Question counter */
+.question-counter {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.q-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #e8d5f5;
+  transition: all 0.3s;
+}
+.q-dot.done-3 { background: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.5); }
+.q-dot.done-2 { background: #c0c0c0; }
+.q-dot.done-1 { background: #cd7f32; }
+.q-dot.done-0 { background: #e57373; }
+.q-dot.current { background: #9b6dc4; transform: scale(1.3); }
+
+/* Petals container */
+#petals-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+.petal {
+  position: absolute;
+  top: -20px;
+  width: 12px; height: 12px;
+  background: radial-gradient(ellipse at 30% 30%, #ffb7c5, #ff69b4);
+  border-radius: 50% 0 50% 0;
+  opacity: 0.8;
+  animation: petalFall var(--duration) linear forwards;
+}
+
+/* Rank badge */
+.rank-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .title-area h1 { font-size: 28px; }
+  .panel { padding: 20px; border-radius: 18px; }
+  .level-grid { grid-template-columns: 1fr; }
+  .guess-input { font-size: 22px; width: 130px; }
+  .score-bar { padding: 8px 16px; gap: 16px; }
+  .number-line-container { margin: 20px 15px 10px 15px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="petals-container"></div>
+
+<div class="game-container">
+  <a href="../" class="back-link">&#8592; Back to Games</a>
+
+  <div class="title-area">
+    <h1>Number Line Ninja</h1>
+    <p class="subtitle">Train your estimation skills!</p>
+  </div>
+
+  <div class="ninja-wrapper" id="ninja-character"></div>
+
+  <div class="score-bar" id="score-bar">
+    <div class="score-item"><div class="label">Level</div><div class="value" id="disp-level">-</div></div>
+    <div class="score-item"><div class="label">Question</div><div class="value" id="disp-question">-</div></div>
+    <div class="score-item"><div class="label">Stars</div><div class="value gold" id="disp-stars">0</div></div>
+    <div class="score-item"><div class="label">Rank</div><div class="value" id="disp-rank"><span class="rank-badge">Trainee</span></div></div>
+  </div>
+
+  <div class="panel" id="main-panel"></div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ── State ──
+  const LEVELS = [
+    { name: "Warm Up", range: [0, 10], desc: "0 to 10", questions: 10 },
+    { name: "Apprentice", range: [0, 100], desc: "0 to 100", questions: 10 },
+    { name: "Journeyman", range: [0, 1000], desc: "0 to 1,000", questions: 10 },
+    { name: "Master", desc: "Tricky ranges", questions: 10, subRanges: [
+      [50, 150], [200, 500], [0, 50], [50, 150], [200, 500],
+      [0, 50], [50, 150], [200, 500], [0, 50], [200, 500]
+    ]}
+  ];
+
+  const RANKS = [
+    { min: 0, name: "Trainee" },
+    { min: 10, name: "Apprentice" },
+    { min: 25, name: "Warrior" },
+    { min: 45, name: "Shadow" },
+    { min: 60, name: "Blade" },
+    { min: 80, name: "Master" },
+    { min: 100, name: "Grandmaster" },
+    { min: 115, name: "Legendary" }
+  ];
+
+  let state = {
+    screen: "menu",
+    currentLevel: 0,
+    currentQuestion: 0,
+    totalStars: 0,
+    levelStars: 0,
+    questionResults: [],
+    targetValue: 0,
+    rangeMin: 0,
+    rangeMax: 100,
+    answered: false,
+    bestScores: loadBestScores()
+  };
+
+  // ── LocalStorage ──
+  function loadBestScores() {
+    try {
+      const data = localStorage.getItem("numberLineNinja_best");
+      return data ? JSON.parse(data) : [0, 0, 0, 0];
+    } catch(e) { return [0, 0, 0, 0]; }
+  }
+
+  function saveBestScores() {
+    try {
+      localStorage.setItem("numberLineNinja_best", JSON.stringify(state.bestScores));
+    } catch(e) { /* ignore */ }
+  }
+
+  function recalcTotalStars() {
+    // Total = sum of best scores for all levels, but for the current level use
+    // the greater of best score or in-progress stars
+    let total = 0;
+    for (let i = 0; i < 4; i++) {
+      if (i === state.currentLevel && state.screen !== "menu") {
+        total += Math.max(state.bestScores[i], state.levelStars);
+      } else {
+        total += state.bestScores[i];
+      }
+    }
+    state.totalStars = total;
+  }
+
+  // ── Helpers ──
+  function getRank(stars) {
+    let rank = RANKS[0];
+    for (const r of RANKS) {
+      if (stars >= r.min) rank = r;
+    }
+    return rank.name;
+  }
+
+  function el(tag, attrs, children) {
+    const e = document.createElement(tag);
+    if (attrs) {
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === "className") e.className = v;
+        else if (k === "textContent") e.textContent = v;
+        else if (k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
+        else if (k === "style" && typeof v === "object") Object.assign(e.style, v);
+        else e.setAttribute(k, v);
+      }
+    }
+    if (children) {
+      for (const c of (Array.isArray(children) ? children : [children])) {
+        if (typeof c === "string") e.appendChild(document.createTextNode(c));
+        else if (c) e.appendChild(c);
+      }
+    }
+    return e;
+  }
+
+  function clearPanel() {
+    const panel = document.getElementById("main-panel");
+    while (panel.firstChild) panel.removeChild(panel.firstChild);
+    return panel;
+  }
+
+  function updateScoreBar() {
+    const dl = document.getElementById("disp-level");
+    const dq = document.getElementById("disp-question");
+    const ds = document.getElementById("disp-stars");
+    const dr = document.getElementById("disp-rank");
+
+    dl.textContent = state.screen === "menu" ? "-" : (state.currentLevel + 1);
+    dq.textContent = state.screen === "play" || state.screen === "result" ? (state.currentQuestion + 1) + "/10" : "-";
+    ds.textContent = state.totalStars;
+
+    while (dr.firstChild) dr.removeChild(dr.firstChild);
+    const badge = el("span", { className: "rank-badge", textContent: getRank(state.totalStars) });
+    dr.appendChild(badge);
+  }
+
+  function generateTarget(level) {
+    const lvl = LEVELS[level];
+    let min, max;
+    if (lvl.subRanges) {
+      const sub = lvl.subRanges[state.currentQuestion % lvl.subRanges.length];
+      min = sub[0]; max = sub[1];
+    } else {
+      min = lvl.range[0]; max = lvl.range[1];
+    }
+    state.rangeMin = min;
+    state.rangeMax = max;
+
+    const range = max - min;
+    // Level 4 with 0-50 range uses decimals
+    if (level === 3 && min === 0 && max === 50) {
+      const raw = min + Math.random() * range;
+      state.targetValue = Math.round(raw * 10) / 10;
+    } else {
+      state.targetValue = Math.round(min + Math.random() * range);
+    }
+  }
+
+  function scoreGuess(guess) {
+    const range = state.rangeMax - state.rangeMin;
+    const diff = Math.abs(guess - state.targetValue);
+    const pct = diff / range;
+
+    if (diff < 0.001) return { stars: 3, text: "Perfect!", color: "#ffd700" };
+    if (pct <= 0.05) return { stars: 2, text: "Great!", color: "#c0c0c0" };
+    if (pct <= 0.10) return { stars: 1, text: "Good try!", color: "#cd7f32" };
+    return { stars: 0, text: "Keep practicing!", color: "#e57373" };
+  }
+
+  function positionPercent(value) {
+    return ((value - state.rangeMin) / (state.rangeMax - state.rangeMin)) * 100;
+  }
+
+  // ── Tick marks ──
+  function getTickValues(min, max) {
+    const range = max - min;
+    let step;
+    if (range <= 10) step = 1;
+    else if (range <= 50) step = 5;
+    else if (range <= 100) step = 10;
+    else if (range <= 500) step = 50;
+    else step = 100;
+
+    const ticks = [];
+    let v = min + step;
+    while (v < max) {
+      ticks.push({ value: v, major: v % (step * 2) === 0 || range <= 10 });
+      v += step;
+    }
+    return ticks;
+  }
+
+  // ── Particle effects ──
+  function spawnPetals(count) {
+    const container = document.getElementById("petals-container");
+    for (let i = 0; i < count; i++) {
+      const petal = document.createElement("div");
+      petal.className = "petal";
+      petal.style.left = (Math.random() * 100) + "%";
+      petal.style.setProperty("--drift", (Math.random() * 100 - 50) + "px");
+      petal.style.setProperty("--duration", (2 + Math.random() * 3) + "s");
+      petal.style.animationDelay = (Math.random() * 1.5) + "s";
+      petal.style.width = (8 + Math.random() * 8) + "px";
+      petal.style.height = (8 + Math.random() * 8) + "px";
+      container.appendChild(petal);
+      setTimeout(function() { if (petal.parentNode) petal.parentNode.removeChild(petal); }, 6000);
+    }
+  }
+
+  // ── Ninja SVG ──
+  function renderNinja(mood) {
+    const wrapper = document.getElementById("ninja-character");
+    while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+    wrapper.className = "ninja-wrapper";
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 120 130");
+    svg.setAttribute("width", "90");
+    svg.setAttribute("height", "98");
+
+    function svgEl(tag, attrs) {
+      const e = document.createElementNS(svgNS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+      return e;
+    }
+
+    // Body
+    svg.appendChild(svgEl("ellipse", { cx: "60", cy: "105", rx: "28", ry: "22", fill: "#2d1b4e" }));
+    // Head
+    svg.appendChild(svgEl("circle", { cx: "60", cy: "55", r: "30", fill: "#2d1b4e" }));
+    // Face mask opening
+    svg.appendChild(svgEl("rect", { x: "32", y: "44", width: "56", height: "16", rx: "8", fill: "#fde8d0" }));
+    // Headband
+    svg.appendChild(svgEl("rect", { x: "30", y: "38", width: "60", height: "8", rx: "4", fill: "#ea4335" }));
+    // Headband tail left
+    svg.appendChild(svgEl("path", { d: "M30 42 Q20 50 15 60", stroke: "#ea4335", "stroke-width": "5", fill: "none", "stroke-linecap": "round" }));
+    // Headband tail right
+    svg.appendChild(svgEl("path", { d: "M90 42 Q100 50 105 60", stroke: "#ea4335", "stroke-width": "5", fill: "none", "stroke-linecap": "round" }));
+
+    // Eyes based on mood
+    if (mood === "celebrate") {
+      // Happy eyes (^_^)
+      svg.appendChild(svgEl("path", { d: "M47 51 Q50 47 53 51", stroke: "#2d1b4e", "stroke-width": "2.5", fill: "none", "stroke-linecap": "round" }));
+      svg.appendChild(svgEl("path", { d: "M67 51 Q70 47 73 51", stroke: "#2d1b4e", "stroke-width": "2.5", fill: "none", "stroke-linecap": "round" }));
+      wrapper.classList.add("celebrate");
+    } else if (mood === "confused") {
+      // Worried eyes
+      svg.appendChild(svgEl("circle", { cx: "50", cy: "50", r: "3", fill: "#2d1b4e" }));
+      svg.appendChild(svgEl("circle", { cx: "70", cy: "50", r: "3", fill: "#2d1b4e" }));
+      // Sweat drop
+      svg.appendChild(svgEl("ellipse", { cx: "82", cy: "48", rx: "3", ry: "4", fill: "#64b5f6" }));
+      wrapper.classList.add("confused");
+    } else if (mood === "good") {
+      // Wink
+      svg.appendChild(svgEl("circle", { cx: "50", cy: "50", r: "3", fill: "#2d1b4e" }));
+      svg.appendChild(svgEl("path", { d: "M67 51 Q70 47 73 51", stroke: "#2d1b4e", "stroke-width": "2.5", fill: "none", "stroke-linecap": "round" }));
+    } else {
+      // Default neutral eyes
+      svg.appendChild(svgEl("circle", { cx: "50", cy: "50", r: "3", fill: "#2d1b4e" }));
+      svg.appendChild(svgEl("circle", { cx: "70", cy: "50", r: "3", fill: "#2d1b4e" }));
+    }
+
+    // Arms
+    svg.appendChild(svgEl("path", { d: "M35 95 Q20 90 18 80", stroke: "#2d1b4e", "stroke-width": "8", fill: "none", "stroke-linecap": "round" }));
+    svg.appendChild(svgEl("path", { d: "M85 95 Q100 90 102 80", stroke: "#2d1b4e", "stroke-width": "8", fill: "none", "stroke-linecap": "round" }));
+
+    // Belt
+    svg.appendChild(svgEl("rect", { x: "36", y: "96", width: "48", height: "5", rx: "2", fill: "#fbbf24" }));
+
+    wrapper.appendChild(svg);
+  }
+
+  // ── Shuriken SVG ──
+  function createShuriken(size, color) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 40 40");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+
+    function svgEl(tag, attrs) {
+      const e = document.createElementNS(svgNS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+      return e;
+    }
+
+    // 4-point shuriken
+    const path = "M20 2 L24 16 L38 20 L24 24 L20 38 L16 24 L2 20 L16 16 Z";
+    svg.appendChild(svgEl("path", { d: path, fill: color || "#4a4a5a", stroke: "#333", "stroke-width": "0.5" }));
+    svg.appendChild(svgEl("circle", { cx: "20", cy: "20", r: "4", fill: "#666" }));
+    svg.appendChild(svgEl("circle", { cx: "20", cy: "20", r: "2", fill: "#999" }));
+
+    return svg;
+  }
+
+  // ── Star shuriken for score ──
+  function createStarShuriken(earned, delay) {
+    const wrapper = el("span", { className: "star", style: { display: "inline-block", animationDelay: delay + "s" } });
+    const color = earned ? "#ffd700" : "#ccc";
+    wrapper.appendChild(createShuriken(32, color));
+    return wrapper;
+  }
+
+  // ── Screens ──
+  function showMenu() {
+    state.screen = "menu";
+    updateScoreBar();
+    renderNinja("default");
+
+    const panel = clearPanel();
+    panel.appendChild(el("h2", { textContent: "Choose Your Training", style: { textAlign: "center", color: "#4a2d6e", marginBottom: "4px", fontSize: "22px" } }));
+    panel.appendChild(el("p", { textContent: "Estimate where the marker falls on the number line", style: { textAlign: "center", color: "#9b6dc4", fontSize: "14px", marginBottom: "8px" } }));
+
+    const grid = el("div", { className: "level-grid" });
+
+    LEVELS.forEach(function(lvl, i) {
+      const card = el("div", { className: "level-card", onClick: function() { startLevel(i); } });
+
+      card.appendChild(el("div", { className: "level-num", textContent: "Level " + (i + 1) }));
+      card.appendChild(el("div", { className: "level-name", textContent: lvl.name }));
+      card.appendChild(el("div", { className: "level-range", textContent: lvl.desc }));
+
+      const best = state.bestScores[i];
+      const bestDiv = el("div", { className: "level-best" });
+      if (best > 0) {
+        bestDiv.appendChild(document.createTextNode("Best: "));
+        bestDiv.appendChild(el("span", { className: "star-count", textContent: best + "/30" }));
+        bestDiv.appendChild(document.createTextNode(" stars"));
+      } else {
+        bestDiv.appendChild(document.createTextNode("Not attempted"));
+      }
+      card.appendChild(bestDiv);
+
+      grid.appendChild(card);
+    });
+
+    panel.appendChild(grid);
+
+    // Total stars display
+    if (state.totalStars > 0) {
+      const totalDiv = el("div", { style: { textAlign: "center", marginTop: "16px", color: "#7c6a8a", fontSize: "14px" } });
+      totalDiv.appendChild(document.createTextNode("Total stars collected: "));
+      totalDiv.appendChild(el("span", { textContent: state.totalStars, style: { color: "#ffa726", fontWeight: "700" } }));
+      panel.appendChild(totalDiv);
+    }
+  }
+
+  function startLevel(levelIndex) {
+    state.currentLevel = levelIndex;
+    state.currentQuestion = 0;
+    state.levelStars = 0;
+    state.questionResults = [];
+    state.answered = false;
+    showQuestion();
+  }
+
+  function showQuestion() {
+    state.screen = "play";
+    state.answered = false;
+    generateTarget(state.currentLevel);
+    updateScoreBar();
+    renderNinja("default");
+
+    const panel = clearPanel();
+
+    // Question dots
+    const dots = el("div", { className: "question-counter" });
+    for (let i = 0; i < 10; i++) {
+      let cls = "q-dot";
+      if (i < state.currentQuestion) {
+        const r = state.questionResults[i] || 0;
+        cls += " done-" + r;
+      } else if (i === state.currentQuestion) {
+        cls += " current";
+      }
+      dots.appendChild(el("div", { className: cls }));
+    }
+    panel.appendChild(dots);
+
+    // Level info
+    const levelInfo = el("div", { style: { textAlign: "center", marginBottom: "6px" } });
+    levelInfo.appendChild(el("span", {
+      textContent: "Level " + (state.currentLevel + 1) + ": " + LEVELS[state.currentLevel].name,
+      style: { fontSize: "14px", color: "#9b6dc4", fontWeight: "600" }
+    }));
+    panel.appendChild(levelInfo);
+
+    // Number line area
+    const nlArea = el("div", { className: "number-line-area" });
+
+    // Prompt
+    nlArea.appendChild(el("div", {
+      textContent: "Where does the marker point to?",
+      style: { textAlign: "center", fontSize: "16px", color: "#4a2d6e", fontWeight: "600", marginBottom: "4px" }
+    }));
+
+    const nlContainer = el("div", { className: "number-line-container", id: "nl-container" });
+
+    // Beam
+    nlContainer.appendChild(el("div", { className: "number-line-beam" }));
+
+    // Endpoints
+    const leftEnd = el("span", { className: "endpoint left", textContent: formatNum(state.rangeMin) });
+    const rightEnd = el("span", { className: "endpoint right", textContent: formatNum(state.rangeMax) });
+    nlContainer.appendChild(leftEnd);
+    nlContainer.appendChild(rightEnd);
+
+    // Tick marks
+    const ticks = getTickValues(state.rangeMin, state.rangeMax);
+    ticks.forEach(function(t) {
+      const pct = positionPercent(t.value);
+      const tick = el("div", {
+        className: "tick-mark" + (t.major ? " major" : ""),
+        style: { left: pct + "%" }
+      });
+      nlContainer.appendChild(tick);
+
+      if (t.major) {
+        const label = el("span", {
+          className: "tick-label",
+          textContent: formatNum(t.value),
+          style: { left: pct + "%" }
+        });
+        nlContainer.appendChild(label);
+      }
+    });
+
+    // Mystery marker (shuriken)
+    const targetPct = positionPercent(state.targetValue);
+    const marker = el("div", { className: "mystery-marker", style: { left: targetPct + "%" }, id: "mystery-marker" });
+    marker.appendChild(createShuriken(36, "#4a4a5a"));
+    nlContainer.appendChild(marker);
+
+    nlArea.appendChild(nlContainer);
+    panel.appendChild(nlArea);
+
+    // Input
+    const inputArea = el("div", { className: "input-area", id: "input-area" });
+    inputArea.appendChild(el("label", { textContent: "Your estimate:", for: "guess-field" }));
+
+    const input = el("input", {
+      className: "guess-input",
+      id: "guess-field",
+      type: "text",
+      inputmode: "decimal",
+      autocomplete: "off",
+      placeholder: "?"
+    });
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") submitGuess();
+    });
+    inputArea.appendChild(input);
+
+    inputArea.appendChild(el("div", { style: { marginTop: "12px" } }, [
+      el("button", { className: "btn btn-primary", textContent: "Submit", onClick: submitGuess })
+    ]));
+
+    panel.appendChild(inputArea);
+
+    // Focus input after a short delay
+    setTimeout(function() { input.focus(); }, 100);
+  }
+
+  function formatNum(n) {
+    if (Number.isInteger(n)) return String(n);
+    return String(Math.round(n * 10) / 10);
+  }
+
+  function submitGuess() {
+    if (state.answered) return;
+
+    const input = document.getElementById("guess-field");
+    if (!input) return;
+    const raw = input.value.trim();
+    if (raw === "") return;
+
+    const guess = parseFloat(raw);
+    if (isNaN(guess)) return;
+
+    state.answered = true;
+    const result = scoreGuess(guess);
+
+    state.questionResults.push(result.stars);
+    state.levelStars += result.stars;
+    recalcTotalStars();
+
+    showResult(guess, result);
+  }
+
+  function showResult(guess, result) {
+    state.screen = "result";
+    updateScoreBar();
+
+    // Ninja mood
+    if (result.stars === 3) {
+      renderNinja("celebrate");
+      spawnPetals(30);
+    } else if (result.stars >= 1) {
+      renderNinja("good");
+    } else {
+      renderNinja("confused");
+    }
+
+    // Show markers on number line
+    const container = document.getElementById("nl-container");
+    if (container) {
+      // Guess line
+      const guessPct = Math.max(0, Math.min(100, positionPercent(guess)));
+      const guessLine = el("div", { className: "guess-line player", style: { left: guessPct + "%" } });
+      container.appendChild(guessLine);
+      const guessLabel = el("div", { className: "guess-label player", textContent: "You: " + formatNum(guess), style: { left: guessPct + "%", top: "-22px" } });
+      container.appendChild(guessLabel);
+
+      // Actual line (only if not perfect)
+      if (result.stars < 3) {
+        const actualPct = positionPercent(state.targetValue);
+        const actualLine = el("div", { className: "guess-line actual", style: { left: actualPct + "%" } });
+        container.appendChild(actualLine);
+        const actualLabel = el("div", { className: "guess-label actual", textContent: "Answer: " + formatNum(state.targetValue), style: { left: actualPct + "%", top: "54px" } });
+        container.appendChild(actualLabel);
+      }
+
+      // Remove mystery marker animation
+      const mm = document.getElementById("mystery-marker");
+      if (mm) mm.style.animation = "none";
+    }
+
+    // Replace input area with result
+    const inputArea = document.getElementById("input-area");
+    if (inputArea) {
+      while (inputArea.firstChild) inputArea.removeChild(inputArea.firstChild);
+
+      const rd = el("div", { className: "result-display" });
+      rd.appendChild(el("div", { className: "result-text", textContent: result.text, style: { color: result.color } }));
+
+      const diff = Math.abs(guess - state.targetValue);
+      const detailText = result.stars === 3 ? "You nailed it exactly!" :
+        "The answer was " + formatNum(state.targetValue) + " (off by " + formatNum(diff) + ")";
+      rd.appendChild(el("div", { className: "result-detail", textContent: detailText }));
+
+      // Stars
+      const starsDiv = el("div", { className: "result-stars" });
+      for (let i = 0; i < 3; i++) {
+        starsDiv.appendChild(createStarShuriken(i < result.stars, i * 0.15));
+      }
+      rd.appendChild(starsDiv);
+
+      // Next button
+      const isLast = state.currentQuestion >= 9;
+      const nextBtn = el("button", {
+        className: "btn " + (isLast ? "btn-gold" : "btn-green"),
+        textContent: isLast ? "See Results" : "Next Question",
+        onClick: function() {
+          state.currentQuestion++;
+          if (state.currentQuestion >= 10) {
+            showLevelComplete();
+          } else {
+            showQuestion();
+          }
+        }
+      });
+      rd.appendChild(el("div", { style: { marginTop: "12px" } }, [nextBtn]));
+
+      inputArea.appendChild(rd);
+    }
+  }
+
+  function showLevelComplete() {
+    state.screen = "complete";
+    updateScoreBar();
+    renderNinja(state.levelStars >= 20 ? "celebrate" : state.levelStars >= 10 ? "good" : "confused");
+
+    if (state.levelStars >= 20) spawnPetals(40);
+
+    // Update best score
+    if (state.levelStars > state.bestScores[state.currentLevel]) {
+      state.bestScores[state.currentLevel] = state.levelStars;
+      saveBestScores();
+    }
+    recalcTotalStars();
+    updateScoreBar();
+
+    const panel = clearPanel();
+    const lc = el("div", { className: "level-complete" });
+
+    lc.appendChild(el("h2", { textContent: "Level " + (state.currentLevel + 1) + " Complete!" }));
+
+    // Stars summary
+    const starsDiv = el("div", { className: "final-stars" });
+    for (let i = 0; i < 3; i++) {
+      // Show shuriken proportionally: each represents 10 stars threshold
+      starsDiv.appendChild(createStarShuriken(state.levelStars >= (i + 1) * 10, i * 0.2));
+    }
+    lc.appendChild(starsDiv);
+
+    lc.appendChild(el("div", {
+      textContent: state.levelStars + " / 30 stars earned",
+      style: { fontSize: "20px", fontWeight: "700", color: "#4a2d6e", marginBottom: "8px" }
+    }));
+
+    const best = state.bestScores[state.currentLevel];
+    lc.appendChild(el("div", {
+      textContent: "Personal best: " + best + " / 30",
+      style: { fontSize: "14px", color: "#9b6dc4", marginBottom: "8px" }
+    }));
+
+    lc.appendChild(el("div", { className: "rank-text", textContent: "Current rank: " + getRank(state.totalStars) }));
+
+    // Question breakdown
+    const breakdown = el("div", { style: { display: "flex", justifyContent: "center", gap: "6px", margin: "12px 0" } });
+    state.questionResults.forEach(function(stars, i) {
+      const dot = el("div", {
+        style: {
+          width: "28px", height: "28px", borderRadius: "50%", display: "flex",
+          alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700",
+          background: stars === 3 ? "#ffd700" : stars === 2 ? "#c0c0c0" : stars === 1 ? "#cd7f32" : "#e57373",
+          color: stars >= 2 ? "#333" : "#fff"
+        },
+        textContent: String(stars)
+      });
+      breakdown.appendChild(dot);
+    });
+    lc.appendChild(breakdown);
+
+    // Buttons
+    const btns = el("div", { style: { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "16px" } });
+    btns.appendChild(el("button", { className: "btn btn-primary btn-small", textContent: "Retry Level", onClick: function() { startLevel(state.currentLevel); } }));
+    btns.appendChild(el("button", { className: "btn btn-green btn-small", textContent: "All Levels", onClick: showMenu }));
+    if (state.currentLevel < 3) {
+      btns.appendChild(el("button", { className: "btn btn-gold btn-small", textContent: "Next Level", onClick: function() { startLevel(state.currentLevel + 1); } }));
+    }
+    lc.appendChild(btns);
+
+    panel.appendChild(lc);
+  }
+
+  // ── Background canvas ──
+  function initBackground() {
+    const canvas = document.getElementById("bg-canvas");
+    const ctx = canvas.getContext("2d");
+    let w, h;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      draw();
+    }
+
+    // Ambient cherry blossom petals drifting
+    const bgPetals = [];
+    for (let i = 0; i < 15; i++) {
+      bgPetals.push({
+        x: Math.random() * 2000,
+        y: Math.random() * 2000,
+        size: 3 + Math.random() * 5,
+        speedX: -0.2 + Math.random() * 0.4,
+        speedY: 0.3 + Math.random() * 0.5,
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: 0.01 + Math.random() * 0.02,
+        opacity: 0.2 + Math.random() * 0.3
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+
+      // Mountains
+      ctx.fillStyle = "rgba(45, 27, 78, 0.15)";
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.65);
+      ctx.lineTo(w * 0.15, h * 0.4);
+      ctx.lineTo(w * 0.3, h * 0.55);
+      ctx.lineTo(w * 0.45, h * 0.35);
+      ctx.lineTo(w * 0.55, h * 0.42);
+      ctx.lineTo(w * 0.7, h * 0.3);
+      ctx.lineTo(w * 0.85, h * 0.45);
+      ctx.lineTo(w, h * 0.38);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Lighter mountain layer
+      ctx.fillStyle = "rgba(74, 45, 110, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.7);
+      ctx.lineTo(w * 0.2, h * 0.5);
+      ctx.lineTo(w * 0.4, h * 0.6);
+      ctx.lineTo(w * 0.6, h * 0.48);
+      ctx.lineTo(w * 0.8, h * 0.55);
+      ctx.lineTo(w, h * 0.5);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bamboo stalks
+      const bambooColor = "rgba(76, 140, 80, 0.12)";
+      const bambooPositions = [0.05, 0.92, 0.96];
+      bambooPositions.forEach(function(xp) {
+        const bx = w * xp;
+        ctx.strokeStyle = bambooColor;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(bx, h);
+        ctx.lineTo(bx + 2, h * 0.15);
+        ctx.stroke();
+
+        // Nodes
+        for (let ny = 0.3; ny < 0.9; ny += 0.15) {
+          ctx.fillStyle = bambooColor;
+          ctx.beginPath();
+          ctx.ellipse(bx + 1, h * ny, 5, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Leaves
+        ctx.fillStyle = "rgba(76, 140, 80, 0.08)";
+        for (let ly = 0.2; ly < 0.7; ly += 0.2) {
+          ctx.beginPath();
+          ctx.ellipse(bx + 18, h * ly - 5, 16, 4, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(bx - 15, h * ly + 10, 14, 3, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      draw();
+
+      // Animate bg petals
+      bgPetals.forEach(function(p) {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.rot += p.rotSpeed;
+
+        if (p.y > h + 20) { p.y = -20; p.x = Math.random() * w; }
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = "#ffb7c5";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    animate();
+  }
+
+  // ── Init ──
+  function init() {
+    recalcTotalStars();
+    initBackground();
+    showMenu();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+</html>
