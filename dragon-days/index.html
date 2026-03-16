@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragon Days</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(180deg, #2d1b69 0%, #1a0a3e 50%, #0d0521 100%);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  user-select: none;
+}
+
+#game-container {
+  width: 100%;
+  max-width: 600px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ===== SCREENS ===== */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.screen.hidden { display: none; }
+
+/* ===== TITLE SCREEN ===== */
+#title-screen .title-dragon { width: 120px; height: 120px; margin-bottom: 10px; }
+
+#title-screen h1 {
+  font-size: 40px;
+  background: linear-gradient(135deg, #f9ca24, #f0932b, #eb4d4b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+#title-screen .subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+.lang-toggle {
+  display: inline-flex;
+  background: rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+.lang-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  transition: all 0.2s;
+}
+
+.lang-btn.active {
+  background: #f9ca24;
+  color: #1a0a3e;
+}
+
+.mode-buttons { display: flex; flex-direction: column; gap: 12px; width: 260px; }
+
+.mode-btn {
+  padding: 14px 24px;
+  border-radius: 16px;
+  border: none;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+  transition: transform 0.15s;
+}
+
+.mode-btn:hover { transform: scale(1.04); }
+.mode-btn:active { transform: scale(0.97); }
+.mode-btn.mode-order { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+.mode-btn.mode-next { background: linear-gradient(135deg, #00b894, #55efc4); color: #1a0a3e; }
+.mode-btn.mode-gap { background: linear-gradient(135deg, #e17055, #fab1a0); color: #1a0a3e; }
+
+.back-link {
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+  margin-top: 20px;
+  text-decoration: none;
+}
+
+/* ===== GAME SCREEN ===== */
+#game-screen {
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.game-header .prompt {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f9ca24;
+  margin-bottom: 4px;
+}
+
+.game-header .sub-prompt {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+}
+
+/* Hatched dragons row */
+.hatched-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  min-height: 80px;
+  width: 100%;
+}
+
+.hatched-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 70px;
+  transition: all 0.3s;
+}
+
+.hatched-slot .dragon-mini { width: 45px; height: 45px; }
+
+.hatched-slot .day-label {
+  font-size: 10px;
+  color: #7bed9f;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.hatched-slot.empty {
+  opacity: 0.2;
+}
+
+.hatched-slot.empty .day-label { color: rgba(255,255,255,0.3); }
+
+/* Eggs area */
+.eggs-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.egg {
+  position: relative;
+  width: 100px;
+  height: 120px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.egg:hover { transform: scale(1.08); }
+.egg:active { transform: scale(0.95); }
+
+.egg svg { width: 100%; height: 100%; }
+
+.egg .egg-label {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: bold;
+  color: #2d3436;
+  white-space: nowrap;
+}
+
+.egg.wobble {
+  animation: wobble 0.5s;
+}
+
+.egg.hatch {
+  animation: hatchPop 0.5s forwards;
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-12deg); }
+  40% { transform: rotate(10deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(5deg); }
+}
+
+@keyframes hatchPop {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* What comes next - question display */
+.question-display {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.question-display .dragon-ask { width: 80px; height: 80px; margin-bottom: 10px; }
+.question-display .ask-label { font-size: 18px; color: #f9ca24; margin-bottom: 4px; }
+.question-display .ask-day { font-size: 34px; font-weight: bold; }
+
+/* Fill the gap - days row */
+.gap-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.gap-day {
+  background: rgba(108,92,231,0.3);
+  border: 1px solid #6c5ce7;
+  padding: 10px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+  min-width: 60px;
+}
+
+.gap-day.missing {
+  background: rgba(249,202,36,0.15);
+  border: 2px dashed #f9ca24;
+  color: #f9ca24;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 8px;
+}
+
+/* ===== RESULT SCREEN ===== */
+#result-screen { text-align: center; }
+
+#result-screen h2 {
+  font-size: 32px;
+  margin-bottom: 8px;
+  color: #f9ca24;
+}
+
+.result-dragons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.result-dragons svg { width: 50px; height: 50px; }
+
+.result-score {
+  font-size: 18px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 8px;
+}
+
+.result-perfect {
+  font-size: 20px;
+  color: #7bed9f;
+  font-weight: bold;
+  margin-bottom: 10px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.btn {
+  background: linear-gradient(135deg, #f9ca24, #f0932b);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 40px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #1a0a3e;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s;
+  margin-top: 12px;
+}
+
+.btn:hover { transform: scale(1.05); }
+.btn:active { transform: scale(0.95); }
+
+/* Particles */
+.particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Stars for celebration */
+.star-burst {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+
+  <!-- TITLE SCREEN -->
+  <div id="title-screen" class="screen">
+    <svg class="title-dragon" viewBox="0 0 120 120">
+      <!-- Big cute dragon for title -->
+      <ellipse cx="60" cy="75" rx="35" ry="30" fill="#6c5ce7"/>
+      <ellipse cx="60" cy="72" rx="32" ry="27" fill="#a29bfe"/>
+      <!-- Belly -->
+      <ellipse cx="60" cy="82" rx="20" ry="16" fill="#dfe6e9"/>
+      <!-- Head -->
+      <circle cx="60" cy="40" r="24" fill="#a29bfe"/>
+      <!-- Eyes -->
+      <ellipse cx="51" cy="36" rx="7" ry="8" fill="white"/>
+      <ellipse cx="69" cy="36" rx="7" ry="8" fill="white"/>
+      <circle cx="53" cy="37" r="4" fill="#2d3436"/>
+      <circle cx="71" cy="37" r="4" fill="#2d3436"/>
+      <circle cx="54" cy="35" r="1.5" fill="white"/>
+      <circle cx="72" cy="35" r="1.5" fill="white"/>
+      <!-- Smile -->
+      <path d="M50 47 Q60 55 70 47" stroke="#2d3436" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Nostrils -->
+      <circle cx="55" cy="42" r="1.5" fill="#6c5ce7"/>
+      <circle cx="65" cy="42" r="1.5" fill="#6c5ce7"/>
+      <!-- Horns -->
+      <path d="M42 22 L38 8 L48 20" fill="#f9ca24"/>
+      <path d="M78 22 L82 8 L72 20" fill="#f9ca24"/>
+      <!-- Wings -->
+      <path d="M28 60 Q10 40 20 55 Q15 45 25 55 Q18 48 28 58" fill="#6c5ce7" opacity="0.8"/>
+      <path d="M92 60 Q110 40 100 55 Q105 45 95 55 Q102 48 92 58" fill="#6c5ce7" opacity="0.8"/>
+      <!-- Feet -->
+      <ellipse cx="42" cy="100" rx="10" ry="6" fill="#6c5ce7"/>
+      <ellipse cx="78" cy="100" rx="10" ry="6" fill="#6c5ce7"/>
+      <!-- Tail -->
+      <path d="M90 85 Q110 90 105 78 Q108 82 100 80" fill="#a29bfe"/>
+      <circle cx="105" cy="76" r="4" fill="#f9ca24"/>
+    </svg>
+    <h1 id="title-text">Dragon Days</h1>
+    <p class="subtitle" id="title-subtitle">Hatch the eggs in the right order!</p>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLanguage('en')">English</button>
+      <button class="lang-btn" onclick="setLanguage('fr')">Fran&ccedil;ais</button>
+    </div>
+
+    <div class="mode-buttons">
+      <button class="mode-btn mode-order" id="btn-order" onclick="startMode('order')">Order the Days</button>
+      <button class="mode-btn mode-next" id="btn-next" onclick="startMode('next')">What Comes Next?</button>
+      <button class="mode-btn mode-gap" id="btn-gap" onclick="startMode('gap')">Fill the Gap</button>
+    </div>
+
+    <a href="../" class="back-link" id="back-link">&larr; Back to games</a>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen hidden">
+    <div class="game-header">
+      <div class="prompt" id="game-prompt"></div>
+      <div class="sub-prompt" id="game-sub-prompt"></div>
+    </div>
+
+    <div id="hatched-container" class="hatched-row"></div>
+    <div id="question-container" class="question-display" style="display:none;"></div>
+    <div id="gap-container" class="gap-row" style="display:none;"></div>
+    <div id="eggs-container" class="eggs-area"></div>
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen" class="screen hidden">
+    <h2 id="result-title"></h2>
+    <div class="result-perfect hidden" id="result-perfect"></div>
+    <div class="result-dragons" id="result-dragons"></div>
+    <div class="result-score" id="result-score"></div>
+    <button class="btn" onclick="showTitle()" id="btn-play-again">Play Again</button>
+    <a href="../" class="back-link" id="back-link-2">&larr; Back to games</a>
+  </div>
+
+</div>
+
+<script>
+// ===== LANGUAGE DATA =====
+var LANG = {
+  en: {
+    days: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
+    title: 'Dragon Days',
+    subtitle: 'Hatch the eggs in the right order!',
+    orderBtn: 'Order the Days',
+    nextBtn: 'What Comes Next?',
+    gapBtn: 'Fill the Gap',
+    tapNext: 'Tap the next day!',
+    roundOf: 'Round {n} of {total}',
+    questionOf: 'Question {n} of {total}',
+    whatAfter: 'What comes after...',
+    whatBefore: 'What comes before...',
+    whichMissing: 'Which day is missing?',
+    pickMissing: 'Tap the correct egg!',
+    bravo: 'Amazing!',
+    tryAgain: 'Great effort!',
+    perfect: 'Perfect score!',
+    scoreText: '{n} out of {total} correct',
+    playAgain: 'Play Again',
+    back: '\u2190 Back to games'
+  },
+  fr: {
+    days: ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'],
+    title: 'Dragon Jours',
+    subtitle: '\u00c9clos les \u0153ufs dans le bon ordre\u00a0!',
+    orderBtn: 'Ordonne les jours',
+    nextBtn: 'Quel jour vient apr\u00e8s\u00a0?',
+    gapBtn: 'Trouve le jour manquant',
+    tapNext: 'Appuie sur le jour suivant\u00a0!',
+    roundOf: 'Manche {n} sur {total}',
+    questionOf: 'Question {n} sur {total}',
+    whatAfter: 'Que vient apr\u00e8s...',
+    whatBefore: 'Que vient avant...',
+    whichMissing: 'Quel jour manque\u00a0?',
+    pickMissing: 'Appuie sur le bon \u0153uf\u00a0!',
+    bravo: 'Bravo\u00a0!',
+    tryAgain: 'Bon effort\u00a0!',
+    perfect: 'Score parfait\u00a0!',
+    scoreText: '{n} sur {total} correct',
+    playAgain: 'Rejouer',
+    back: '\u2190 Retour aux jeux'
+  }
+};
+
+// Dragon colors for each day
+var DRAGON_COLORS = [
+  { body: '#ff6b6b', light: '#ff8e8e', horn: '#f9ca24' },
+  { body: '#ffa502', light: '#ffc048', horn: '#ff6348' },
+  { body: '#2ed573', light: '#7bed9f', horn: '#f9ca24' },
+  { body: '#1e90ff', light: '#70a1ff', horn: '#ffd32a' },
+  { body: '#a29bfe', light: '#c8c3ff', horn: '#fd79a8' },
+  { body: '#fd79a8', light: '#ffb0cd', horn: '#6c5ce7' },
+  { body: '#f9ca24', light: '#fde68a', horn: '#e17055' },
+];
+
+var EGG_COLORS = ['#ffb8b8','#ffd0a1','#b8f0c8','#a1d4ff','#d4cfff','#ffb8d9','#fff3b8'];
+
+// ===== STATE =====
+var lang = 'en';
+var currentMode = '';
+var currentRound = 0;
+var totalRounds = 0;
+var correctCount = 0;
+var orderIndex = 0;
+var questions = [];
+var currentQuestion = 0;
+
+// ===== SVG GENERATORS =====
+function dragonSVG(colorIndex, size) {
+  var c = DRAGON_COLORS[colorIndex];
+  var s = size || 50;
+  return '<svg viewBox="0 0 100 100" width="' + s + '" height="' + s + '">' +
+    '<ellipse cx="50" cy="65" rx="28" ry="24" fill="' + c.body + '"/>' +
+    '<ellipse cx="50" cy="62" rx="25" ry="21" fill="' + c.light + '"/>' +
+    '<ellipse cx="50" cy="72" rx="15" ry="12" fill="#ffeaa7"/>' +
+    '<circle cx="50" cy="32" r="20" fill="' + c.light + '"/>' +
+    '<ellipse cx="42" cy="28" rx="6" ry="7" fill="white"/>' +
+    '<ellipse cx="58" cy="28" rx="6" ry="7" fill="white"/>' +
+    '<circle cx="43.5" cy="29" r="3.5" fill="#2d3436"/>' +
+    '<circle cx="59.5" cy="29" r="3.5" fill="#2d3436"/>' +
+    '<circle cx="44.5" cy="27.5" r="1.2" fill="white"/>' +
+    '<circle cx="60.5" cy="27.5" r="1.2" fill="white"/>' +
+    '<path d="M42 38 Q50 45 58 38" stroke="#2d3436" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="46" cy="34" r="1.2" fill="' + c.body + '"/>' +
+    '<circle cx="54" cy="34" r="1.2" fill="' + c.body + '"/>' +
+    '<path d="M35 17 L32 4 L41 15" fill="' + c.horn + '"/>' +
+    '<path d="M65 17 L68 4 L59 15" fill="' + c.horn + '"/>' +
+    '<path d="M24 52 Q8 35 16 48 Q10 40 20 48 Q14 42 24 50" fill="' + c.body + '" opacity="0.7"/>' +
+    '<path d="M76 52 Q92 35 84 48 Q90 40 80 48 Q86 42 76 50" fill="' + c.body + '" opacity="0.7"/>' +
+    '<ellipse cx="36" cy="86" rx="8" ry="5" fill="' + c.body + '"/>' +
+    '<ellipse cx="64" cy="86" rx="8" ry="5" fill="' + c.body + '"/>' +
+    '<path d="M76 72 Q94 76 90 66 Q92 70 86 68" fill="' + c.light + '"/>' +
+    '<circle cx="90" cy="64" r="3.5" fill="' + c.horn + '"/>' +
+    '<ellipse cx="42" cy="22" rx="4" ry="2.5" fill="rgba(255,182,193,0.5)"/>' +
+    '<ellipse cx="58" cy="22" rx="4" ry="2.5" fill="rgba(255,182,193,0.5)"/>' +
+    '</svg>';
+}
+
+function eggSVG(colorIndex, label) {
+  var color = EGG_COLORS[colorIndex % EGG_COLORS.length];
+  return '<svg viewBox="0 0 80 100" width="100" height="120">' +
+    '<ellipse cx="40" cy="55" rx="30" ry="38" fill="' + color + '"/>' +
+    '<ellipse cx="40" cy="55" rx="30" ry="38" fill="url(#eggShine' + colorIndex + ')" />' +
+    '<defs><radialGradient id="eggShine' + colorIndex + '" cx="35%" cy="35%" r="50%">' +
+    '<stop offset="0%" stop-color="rgba(255,255,255,0.5)"/>' +
+    '<stop offset="100%" stop-color="rgba(255,255,255,0)"/>' +
+    '</radialGradient></defs>' +
+    '<ellipse cx="30" cy="42" rx="4" ry="6" fill="rgba(255,255,255,0.3)" transform="rotate(-15 30 42)"/>' +
+    '<circle cx="50" cy="65" r="5" fill="rgba(255,255,255,0.15)"/>' +
+    '<circle cx="30" cy="70" r="3" fill="rgba(255,255,255,0.12)"/>' +
+    '</svg>';
+}
+
+// ===== LANGUAGE =====
+function setLanguage(l) {
+  lang = l;
+  var btns = document.querySelectorAll('.lang-btn');
+  btns[0].classList.toggle('active', l === 'en');
+  btns[1].classList.toggle('active', l === 'fr');
+  updateTitleText();
+}
+
+function t(key) { return LANG[lang][key]; }
+
+function updateTitleText() {
+  document.getElementById('title-text').textContent = t('title');
+  document.getElementById('title-subtitle').textContent = t('subtitle');
+  document.getElementById('btn-order').textContent = t('orderBtn');
+  document.getElementById('btn-next').textContent = t('nextBtn');
+  document.getElementById('btn-gap').textContent = t('gapBtn');
+  document.getElementById('back-link').textContent = t('back');
+  document.getElementById('back-link-2').textContent = t('back');
+  document.getElementById('btn-play-again').textContent = t('playAgain');
+}
+
+// ===== SCREENS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.add('hidden'); });
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function showTitle() {
+  updateTitleText();
+  showScreen('title-screen');
+}
+
+// ===== SHUFFLE =====
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+// ===== START MODES =====
+function startMode(mode) {
+  currentMode = mode;
+  correctCount = 0;
+
+  if (mode === 'order') {
+    totalRounds = 3;
+    currentRound = 0;
+    startOrderRound();
+  } else if (mode === 'next') {
+    buildNextQuestions();
+    currentQuestion = 0;
+    showNextQuestion();
+  } else if (mode === 'gap') {
+    buildGapQuestions();
+    currentQuestion = 0;
+    showGapQuestion();
+  }
+
+  showScreen('game-screen');
+}
+
+// ===== MODE: ORDER THE DAYS =====
+function startOrderRound() {
+  currentRound++;
+  orderIndex = 0;
+  var days = t('days');
+
+  // Build hatched row
+  var hatchedEl = document.getElementById('hatched-container');
+  clearChildren(hatchedEl);
+  hatchedEl.style.display = 'flex';
+  for (var i = 0; i < 7; i++) {
+    var slot = document.createElement('div');
+    slot.className = 'hatched-slot empty';
+    slot.id = 'slot-' + i;
+    var dragonDiv = document.createElement('div');
+    dragonDiv.className = 'dragon-mini';
+    dragonDiv.style.width = '45px';
+    dragonDiv.style.height = '45px';
+    dragonDiv.style.display = 'flex';
+    dragonDiv.style.alignItems = 'center';
+    dragonDiv.style.justifyContent = 'center';
+    dragonDiv.style.fontSize = '24px';
+    dragonDiv.textContent = '?';
+    slot.appendChild(dragonDiv);
+    var label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = '???';
+    slot.appendChild(label);
+    hatchedEl.appendChild(slot);
+  }
+
+  // Hide unused containers
+  document.getElementById('question-container').style.display = 'none';
+  document.getElementById('gap-container').style.display = 'none';
+
+  document.getElementById('game-prompt').textContent = t('tapNext');
+  document.getElementById('game-sub-prompt').textContent = '';
+  document.getElementById('progress-bar').textContent = t('roundOf').replace('{n}', currentRound).replace('{total}', totalRounds);
+
+  // Build shuffled eggs
+  renderOrderEggs();
+}
+
+function renderOrderEggs() {
+  var days = t('days');
+  var remaining = [];
+  for (var i = 0; i < 7; i++) {
+    if (i >= orderIndex) remaining.push(i);
+  }
+  var shuffled = shuffle(remaining);
+
+  var eggsEl = document.getElementById('eggs-container');
+  clearChildren(eggsEl);
+
+  for (var j = 0; j < shuffled.length; j++) {
+    var idx = shuffled[j];
+    var egg = createEgg(idx, days[idx], function(dayIdx) {
+      handleOrderTap(dayIdx);
+    });
+    eggsEl.appendChild(egg);
+  }
+}
+
+function handleOrderTap(dayIdx) {
+  if (dayIdx === orderIndex) {
+    // Correct!
+    var days = t('days');
+    var slot = document.getElementById('slot-' + orderIndex);
+    slot.classList.remove('empty');
+    var dragonDiv = slot.querySelector('.dragon-mini');
+    dragonDiv.textContent = '';
+    dragonDiv.insertAdjacentHTML('beforeend', dragonSVG(dayIdx, 45));
+    slot.querySelector('.day-label').textContent = days[dayIdx];
+
+    spawnCelebration(slot);
+    orderIndex++;
+
+    if (orderIndex >= 7) {
+      correctCount++;
+      setTimeout(function() {
+        if (currentRound < totalRounds) {
+          startOrderRound();
+        } else {
+          showResult();
+        }
+      }, 800);
+    } else {
+      renderOrderEggs();
+    }
+  } else {
+    // Wrong — wobble the egg
+    var eggs = document.querySelectorAll('.egg');
+    eggs.forEach(function(e) {
+      if (parseInt(e.dataset.dayIndex, 10) === dayIdx) {
+        e.classList.add('wobble');
+        setTimeout(function() { e.classList.remove('wobble'); }, 500);
+      }
+    });
+  }
+}
+
+// ===== MODE: WHAT COMES NEXT =====
+function buildNextQuestions() {
+  questions = [];
+  var indices = [];
+  for (var i = 0; i < 7; i++) indices.push(i);
+  var shuffled = shuffle(indices);
+
+  for (var q = 0; q < 10; q++) {
+    var dayIdx = shuffled[q % 7];
+    var askBefore = q >= 7;
+    var answerIdx = askBefore ? (dayIdx === 0 ? 6 : dayIdx - 1) : (dayIdx + 1) % 7;
+
+    // Build wrong answers
+    var wrongs = [];
+    while (wrongs.length < 2) {
+      var r = Math.floor(Math.random() * 7);
+      if (r !== answerIdx && wrongs.indexOf(r) === -1) wrongs.push(r);
+    }
+
+    var options = shuffle([answerIdx, wrongs[0], wrongs[1]]);
+    questions.push({ dayIdx: dayIdx, answerIdx: answerIdx, options: options, askBefore: askBefore });
+  }
+  totalRounds = 10;
+}
+
+function showNextQuestion() {
+  var q = questions[currentQuestion];
+  var days = t('days');
+
+  document.getElementById('hatched-container').style.display = 'none';
+  document.getElementById('gap-container').style.display = 'none';
+
+  var qContainer = document.getElementById('question-container');
+  qContainer.style.display = 'block';
+  clearChildren(qContainer);
+
+  var dragonDiv = document.createElement('div');
+  dragonDiv.className = 'dragon-ask';
+  dragonDiv.insertAdjacentHTML('beforeend', dragonSVG(q.dayIdx, 80));
+  qContainer.appendChild(dragonDiv);
+
+  var askLabel = document.createElement('div');
+  askLabel.className = 'ask-label';
+  askLabel.textContent = q.askBefore ? t('whatBefore') : t('whatAfter');
+  qContainer.appendChild(askLabel);
+
+  var askDay = document.createElement('div');
+  askDay.className = 'ask-day';
+  askDay.textContent = days[q.dayIdx];
+  qContainer.appendChild(askDay);
+
+  document.getElementById('game-prompt').textContent = '';
+  document.getElementById('game-sub-prompt').textContent = '';
+  document.getElementById('progress-bar').textContent = t('questionOf').replace('{n}', currentQuestion + 1).replace('{total}', totalRounds);
+
+  // Render option eggs
+  var eggsEl = document.getElementById('eggs-container');
+  clearChildren(eggsEl);
+
+  for (var i = 0; i < q.options.length; i++) {
+    var optIdx = q.options[i];
+    var egg = createEgg(optIdx, days[optIdx], function(dayIdx) {
+      handleNextTap(dayIdx);
+    });
+    eggsEl.appendChild(egg);
+  }
+}
+
+function handleNextTap(dayIdx) {
+  var q = questions[currentQuestion];
+  if (dayIdx === q.answerIdx) {
+    correctCount++;
+    var eggsEl = document.getElementById('eggs-container');
+    spawnCelebration(eggsEl);
+    currentQuestion++;
+    setTimeout(function() {
+      if (currentQuestion < questions.length) {
+        showNextQuestion();
+      } else {
+        showResult();
+      }
+    }, 600);
+  } else {
+    var eggs = document.querySelectorAll('.egg');
+    eggs.forEach(function(e) {
+      if (parseInt(e.dataset.dayIndex, 10) === dayIdx) {
+        e.classList.add('wobble');
+        setTimeout(function() { e.classList.remove('wobble'); }, 500);
+      }
+    });
+  }
+}
+
+// ===== MODE: FILL THE GAP =====
+function buildGapQuestions() {
+  questions = [];
+  var indices = [];
+  for (var i = 0; i < 7; i++) indices.push(i);
+  var shuffled = shuffle(indices);
+
+  for (var q = 0; q < 10; q++) {
+    var missingIdx = shuffled[q % 7];
+    var wrongs = [];
+    while (wrongs.length < 2) {
+      var r = Math.floor(Math.random() * 7);
+      if (r !== missingIdx && wrongs.indexOf(r) === -1) wrongs.push(r);
+    }
+    var options = shuffle([missingIdx, wrongs[0], wrongs[1]]);
+    questions.push({ missingIdx: missingIdx, options: options });
+  }
+  totalRounds = 10;
+}
+
+function showGapQuestion() {
+  var q = questions[currentQuestion];
+  var days = t('days');
+
+  document.getElementById('hatched-container').style.display = 'none';
+  document.getElementById('question-container').style.display = 'none';
+
+  var gapEl = document.getElementById('gap-container');
+  gapEl.style.display = 'flex';
+  clearChildren(gapEl);
+
+  for (var i = 0; i < 7; i++) {
+    var dayDiv = document.createElement('div');
+    dayDiv.className = 'gap-day';
+    if (i === q.missingIdx) {
+      dayDiv.classList.add('missing');
+      dayDiv.textContent = '???';
+    } else {
+      dayDiv.textContent = days[i];
+    }
+    gapEl.appendChild(dayDiv);
+  }
+
+  document.getElementById('game-prompt').textContent = t('whichMissing');
+  document.getElementById('game-sub-prompt').textContent = t('pickMissing');
+  document.getElementById('progress-bar').textContent = t('questionOf').replace('{n}', currentQuestion + 1).replace('{total}', totalRounds);
+
+  var eggsEl = document.getElementById('eggs-container');
+  clearChildren(eggsEl);
+
+  for (var j = 0; j < q.options.length; j++) {
+    var optIdx = q.options[j];
+    var egg = createEgg(optIdx, days[optIdx], function(dayIdx) {
+      handleGapTap(dayIdx);
+    });
+    eggsEl.appendChild(egg);
+  }
+}
+
+function handleGapTap(dayIdx) {
+  var q = questions[currentQuestion];
+  if (dayIdx === q.missingIdx) {
+    correctCount++;
+    // Reveal the missing day
+    var gapDays = document.querySelectorAll('.gap-day');
+    gapDays[q.missingIdx].classList.remove('missing');
+    gapDays[q.missingIdx].textContent = t('days')[q.missingIdx];
+    gapDays[q.missingIdx].style.background = 'rgba(46,213,115,0.3)';
+    gapDays[q.missingIdx].style.borderColor = '#2ed573';
+
+    var gapEl = document.getElementById('gap-container');
+    spawnCelebration(gapEl);
+    currentQuestion++;
+    setTimeout(function() {
+      if (currentQuestion < questions.length) {
+        showGapQuestion();
+      } else {
+        showResult();
+      }
+    }, 700);
+  } else {
+    var eggs = document.querySelectorAll('.egg');
+    eggs.forEach(function(e) {
+      if (parseInt(e.dataset.dayIndex, 10) === dayIdx) {
+        e.classList.add('wobble');
+        setTimeout(function() { e.classList.remove('wobble'); }, 500);
+      }
+    });
+  }
+}
+
+// ===== RESULT SCREEN =====
+function showResult() {
+  var isPerfect = false;
+  if (currentMode === 'order') {
+    isPerfect = correctCount === totalRounds;
+  } else {
+    isPerfect = correctCount === totalRounds;
+  }
+
+  document.getElementById('result-title').textContent = isPerfect ? t('bravo') : t('tryAgain');
+  var perfectEl = document.getElementById('result-perfect');
+  if (isPerfect) {
+    perfectEl.textContent = t('perfect');
+    perfectEl.classList.remove('hidden');
+  } else {
+    perfectEl.classList.add('hidden');
+  }
+
+  var total = currentMode === 'order' ? totalRounds : totalRounds;
+  document.getElementById('result-score').textContent = t('scoreText').replace('{n}', correctCount).replace('{total}', total);
+
+  // Show dragon parade
+  var dragonsEl = document.getElementById('result-dragons');
+  clearChildren(dragonsEl);
+  for (var i = 0; i < 7; i++) {
+    var d = document.createElement('span');
+    d.insertAdjacentHTML('beforeend', dragonSVG(i, 50));
+    dragonsEl.appendChild(d);
+  }
+
+  showScreen('result-screen');
+
+  if (isPerfect) {
+    for (var p = 0; p < 3; p++) {
+      setTimeout(function() {
+        spawnConfettiOnScreen();
+      }, p * 400);
+    }
+  }
+}
+
+// ===== EGG FACTORY =====
+function createEgg(dayIndex, label, onTap) {
+  var egg = document.createElement('div');
+  egg.className = 'egg';
+  egg.dataset.dayIndex = dayIndex;
+  egg.insertAdjacentHTML('beforeend', eggSVG(dayIndex, label));
+  var labelDiv = document.createElement('div');
+  labelDiv.className = 'egg-label';
+  labelDiv.textContent = label;
+  egg.appendChild(labelDiv);
+
+  egg.addEventListener('click', function() {
+    onTap(dayIndex);
+  });
+
+  return egg;
+}
+
+// ===== EFFECTS =====
+function spawnCelebration(sourceEl) {
+  var rect = sourceEl.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top + rect.height / 2;
+  var colors = ['#f9ca24','#ff6b6b','#7bed9f','#70a1ff','#fd79a8','#a29bfe'];
+
+  for (var i = 0; i < 10; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    document.body.appendChild(p);
+
+    var angle = (Math.PI * 2 * i) / 10;
+    var dist = 30 + Math.random() * 50;
+    var dx = Math.cos(angle) * dist;
+    var dy = Math.sin(angle) * dist;
+
+    p.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+      { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0)', opacity: 0 }
+    ], { duration: 500, easing: 'ease-out' });
+
+    (function(particle) {
+      setTimeout(function() { particle.remove(); }, 500);
+    })(p);
+  }
+
+  // Star burst
+  var star = document.createElement('div');
+  star.className = 'star-burst';
+  star.textContent = '\u2b50';
+  star.style.left = cx + 'px';
+  star.style.top = cy + 'px';
+  document.body.appendChild(star);
+  star.animate([
+    { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+    { transform: 'translate(-50%, -100px) scale(1.5)', opacity: 0 }
+  ], { duration: 600, easing: 'ease-out' });
+  setTimeout(function() { star.remove(); }, 600);
+}
+
+function spawnConfettiOnScreen() {
+  var colors = ['#ff6b6b','#ffd32a','#7bed9f','#70a1ff','#ff6348','#a29bfe','#fd79a8'];
+  for (var i = 0; i < 25; i++) {
+    var c = document.createElement('div');
+    c.className = 'particle';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.left = Math.random() * window.innerWidth + 'px';
+    c.style.top = '-10px';
+    c.style.width = (6 + Math.random() * 6) + 'px';
+    c.style.height = (6 + Math.random() * 6) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+
+    var xDrift = (Math.random() - 0.5) * 150;
+    var duration = 1200 + Math.random() * 1500;
+    var delay = Math.random() * 400;
+
+    c.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+      { transform: 'translate(' + xDrift + 'px, ' + (window.innerHeight + 20) + 'px) rotate(' + (360 + Math.random()*360) + 'deg)', opacity: 0 }
+    ], { duration: duration, delay: delay, easing: 'ease-in' });
+
+    (function(confetti, d, dl) {
+      setTimeout(function() { confetti.remove(); }, d + dl);
+    })(c, duration, delay);
+  }
+}
+
+// ===== HELPERS =====
+function clearChildren(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+// ===== INIT =====
+showTitle();
+</script>
+</body>
+</html>
