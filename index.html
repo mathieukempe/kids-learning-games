@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kids Learning Games</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #ffd32a, #ff6b6b, #7bed9f, #70a1ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 18px;
+  margin-bottom: 50px;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.game-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255,255,255,0.12);
+}
+
+.game-card .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.game-card h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.game-card p {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.game-card .tag {
+  display: inline-block;
+  background: rgba(255,211,42,0.15);
+  color: #ffd32a;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+</style>
+</head>
+<body>
+  <h1>Kids Learning Games</h1>
+  <p class="subtitle">Fun games to learn and practice!</p>
+
+  <div class="games">
+    <a href="multiplication-drop/" class="game-card">
+      <div class="icon">✖️</div>
+      <h2>Multiplication Drop</h2>
+      <p>Zap falling blocks by solving multiplication problems! 10 waves of increasing difficulty.</p>
+      <span class="tag">Maths — Tables 1-10</span>
+    </a>
+  </div>
+</body>
+</html>
