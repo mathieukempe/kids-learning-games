@@ -220,13 +220,15 @@ body {
   color: #fff;
   font-size: 2.2rem;
   font-weight: 700;
-  padding: 8px 4px;
+  padding: 8px 12px 8px 8px;
   width: 90px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
+}
+.time-select option {
+  background: #2d1b69;
+  color: #fff;
 }
 .time-select:focus {
   outline: none;
@@ -608,12 +610,29 @@ body {
     // Filter for shadow
     var filter = document.createElementNS(NS, "filter");
     filter.setAttribute("id", "handShadow");
-    var feOffset = document.createElementNS(NS, "feDropShadow");
-    feOffset.setAttribute("dx", "1");
-    feOffset.setAttribute("dy", "2");
-    feOffset.setAttribute("stdDeviation", "2");
-    feOffset.setAttribute("flood-color", "rgba(0,0,0,0.4)");
-    filter.appendChild(feOffset);
+    filter.setAttribute("x", "-20%");
+    filter.setAttribute("y", "-20%");
+    filter.setAttribute("width", "140%");
+    filter.setAttribute("height", "140%");
+    var feGauss = document.createElementNS(NS, "feGaussianBlur");
+    feGauss.setAttribute("in", "SourceAlpha");
+    feGauss.setAttribute("stdDeviation", "2");
+    feGauss.setAttribute("result", "blur");
+    filter.appendChild(feGauss);
+    var feOff = document.createElementNS(NS, "feOffset");
+    feOff.setAttribute("in", "blur");
+    feOff.setAttribute("dx", "1");
+    feOff.setAttribute("dy", "2");
+    feOff.setAttribute("result", "shadow");
+    filter.appendChild(feOff);
+    var feMerge = document.createElementNS(NS, "feMerge");
+    var mergeNode1 = document.createElementNS(NS, "feMergeNode");
+    mergeNode1.setAttribute("in", "shadow");
+    feMerge.appendChild(mergeNode1);
+    var mergeNode2 = document.createElementNS(NS, "feMergeNode");
+    mergeNode2.setAttribute("in", "SourceGraphic");
+    feMerge.appendChild(mergeNode2);
+    filter.appendChild(feMerge);
     defs.appendChild(filter);
 
     clockSvg.appendChild(defs);
