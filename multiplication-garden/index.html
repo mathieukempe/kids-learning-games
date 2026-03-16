@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplication Garden</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 30%, #81C784 60%, #4CAF50 100%);
+  color: #2d3436;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+/* ===== HEADER ===== */
+.header {
+  text-align: center;
+  padding: 16px 20px 8px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.header h1 {
+  font-size: 28px;
+  color: #2e7d32;
+  margin-bottom: 2px;
+}
+
+.header .subtitle {
+  font-size: 13px;
+  color: #558b2f;
+}
+
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #33691e;
+}
+
+.stats-bar span { display: flex; align-items: center; gap: 4px; }
+
+/* ===== GARDEN GRID ===== */
+.garden-wrapper {
+  width: 100%;
+  max-width: 680px;
+  padding: 0 8px;
+  overflow-x: auto;
+}
+
+.garden-grid {
+  display: grid;
+  grid-template-columns: 36px repeat(10, 1fr);
+  grid-template-rows: 30px repeat(10, 1fr);
+  gap: 2px;
+  width: 100%;
+  min-width: 400px;
+  aspect-ratio: 11 / 10.5;
+}
+
+.grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+  color: #558b2f;
+  background: rgba(255,255,255,0.4);
+  border-radius: 4px;
+}
+
+.grid-corner {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-size: 18px;
+  aspect-ratio: 1;
+}
+
+.cell:hover { transform: scale(1.08); z-index: 2; }
+
+/* Cell states */
+.cell.soil {
+  background: linear-gradient(135deg, #8d6e63, #a1887f);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cell.seed {
+  background: linear-gradient(135deg, #8d6e63, #a1887f);
+}
+
+.cell.seed::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #33691e;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.cell.sprout {
+  background: linear-gradient(135deg, #a5d6a7, #81c784);
+}
+
+.cell.bloom {
+  background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+}
+
+.cell.mastered {
+  background: linear-gradient(135deg, #fff9c4, #f0f4c3);
+  box-shadow: 0 0 8px rgba(255,235,59,0.4);
+}
+
+/* Flower stages */
+.flower { font-size: 20px; line-height: 1; }
+
+/* Cell tooltip on hover */
+.cell .cell-tip {
+  display: none;
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.cell:hover .cell-tip { display: block; }
+
+/* ===== QUESTION PANEL ===== */
+.question-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.question-overlay.hidden { display: none; }
+
+.question-panel {
+  background: linear-gradient(180deg, #fff, #f1f8e9);
+  border-radius: 24px;
+  padding: 32px;
+  text-align: center;
+  width: 90%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.question-panel .fact {
+  font-size: 36px;
+  font-weight: bold;
+  color: #2e7d32;
+  margin-bottom: 20px;
+}
+
+.question-panel .fact .answer-blank {
+  display: inline-block;
+  min-width: 60px;
+  border-bottom: 3px solid #2e7d32;
+  margin-left: 4px;
+}
+
+/* Multiple choice */
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.choice-btn {
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px solid #c8e6c9;
+  background: white;
+  font-size: 22px;
+  font-weight: bold;
+  color: #2d3436;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.choice-btn:hover { background: #e8f5e9; border-color: #66bb6a; transform: scale(1.04); }
+.choice-btn:active { transform: scale(0.96); }
+.choice-btn.correct { background: #c8e6c9; border-color: #43a047; }
+.choice-btn.wrong { background: #ffcdd2; border-color: #e53935; }
+
+/* Type input */
+.type-input-area {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.type-input {
+  width: 100px;
+  padding: 12px;
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  border: 2px solid #c8e6c9;
+  border-radius: 14px;
+  outline: none;
+  font-family: inherit;
+  color: #2d3436;
+}
+
+.type-input:focus { border-color: #43a047; }
+
+.type-input.correct { border-color: #43a047; background: #e8f5e9; }
+.type-input.wrong { border-color: #e53935; background: #ffebee; }
+
+.submit-type-btn {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #66bb6a, #43a047);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s;
+}
+
+.submit-type-btn:hover { transform: scale(1.05); }
+
+.question-panel .streak-info {
+  font-size: 13px;
+  color: #7cb342;
+  margin-top: 4px;
+}
+
+.question-panel .level-info {
+  font-size: 12px;
+  color: #9e9e9e;
+  margin-top: 8px;
+}
+
+/* Close / skip */
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #999;
+  cursor: pointer;
+}
+
+/* ===== FEEDBACK ===== */
+.feedback {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 8px;
+  min-height: 28px;
+}
+
+.feedback.correct-fb { color: #2e7d32; }
+.feedback.wrong-fb { color: #c62828; }
+
+/* ===== PARTICLES ===== */
+.particle {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ===== PRACTICE BUTTON ===== */
+.practice-area {
+  padding: 12px;
+  text-align: center;
+}
+
+.practice-btn {
+  background: linear-gradient(135deg, #66bb6a, #43a047);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 36px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s;
+  box-shadow: 0 4px 15px rgba(67,160,71,0.3);
+}
+
+.practice-btn:hover { transform: scale(1.05); }
+.practice-btn:active { transform: scale(0.96); }
+
+.back-link {
+  color: #558b2f;
+  font-size: 13px;
+  margin-top: 8px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* ===== RESET ===== */
+.reset-link {
+  color: #999;
+  font-size: 12px;
+  margin-top: 6px;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: underline;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 500px) {
+  .garden-grid { gap: 1px; }
+  .grid-header { font-size: 11px; }
+  .cell .flower { font-size: 16px; }
+  .header h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Multiplication Garden</h1>
+  <p class="subtitle">Grow flowers by mastering your multiplication facts!</p>
+</div>
+
+<div class="stats-bar">
+  <span id="stat-mastered">Mastered: 0 / 100</span>
+  <span id="stat-streak">Streak: 0</span>
+  <span id="stat-session">Session: 0</span>
+</div>
+
+<div class="garden-wrapper">
+  <div class="garden-grid" id="garden-grid"></div>
+</div>
+
+<div class="practice-area">
+  <button class="practice-btn" id="practice-btn" onclick="practiceNext()">Practice Next</button>
+  <br>
+  <a href="../" class="back-link">&larr; Back to games</a>
+  <br>
+  <span class="reset-link" id="reset-link" onclick="confirmReset()">Reset garden</span>
+</div>
+
+<!-- Question overlay -->
+<div class="question-overlay hidden" id="question-overlay">
+  <div class="question-panel" id="question-panel">
+    <button class="close-btn" onclick="closeQuestion()">&times;</button>
+    <div class="fact" id="q-fact"></div>
+    <div id="q-choices-area"></div>
+    <div class="feedback" id="q-feedback"></div>
+    <div class="streak-info" id="q-streak"></div>
+    <div class="level-info" id="q-level"></div>
+  </div>
+</div>
+
+<script>
+// ===== CONSTANTS =====
+var FLOWERS = ['🌱', '🌿', '🌷', '🌻'];
+// Stages: 0=soil, 1=seed, 2=sprout, 3=bloom, 4=mastered
+var STAGE_NAMES = ['soil', 'seed', 'sprout', 'bloom', 'mastered'];
+// Correct answers needed to advance each stage
+var STAGE_THRESHOLDS = [1, 2, 3, 3];
+// After mastered: review interval in sessions (spaced repetition)
+var REVIEW_INTERVALS = [3, 7, 15, 30];
+
+// ===== STATE =====
+var facts = {}; // key: "3x7" -> { stage, correct, streak, lastSeen, reviewAfter, wrongCount }
+var sessionCount = 0;
+var currentStreak = 0;
+var sessionCorrect = 0;
+var currentFact = null;
+var isAnswered = false;
+
+// ===== LOCAL STORAGE =====
+var SAVE_KEY = 'multgarden-save';
+
+function saveState() {
+  var data = {
+    facts: facts,
+    sessionCount: sessionCount
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function loadState() {
+  var saved = localStorage.getItem(SAVE_KEY);
+  if (saved) {
+    var data = JSON.parse(saved);
+    facts = data.facts || {};
+    sessionCount = data.sessionCount || 0;
+  }
+  // Ensure all 100 facts exist
+  for (var r = 1; r <= 10; r++) {
+    for (var c = 1; c <= 10; c++) {
+      var key = r + 'x' + c;
+      if (!facts[key]) {
+        facts[key] = { stage: 0, correct: 0, streak: 0, lastSeen: 0, reviewAfter: 0, wrongCount: 0 };
+      }
+    }
+  }
+  sessionCount++;
+  saveState();
+}
+
+// ===== GRID RENDERING =====
+function renderGrid() {
+  var grid = document.getElementById('garden-grid');
+  clearChildren(grid);
+
+  // Corner
+  var corner = document.createElement('div');
+  corner.className = 'grid-corner grid-header';
+  corner.textContent = '\u00d7';
+  grid.appendChild(corner);
+
+  // Column headers
+  for (var c = 1; c <= 10; c++) {
+    var ch = document.createElement('div');
+    ch.className = 'grid-header';
+    ch.textContent = c;
+    grid.appendChild(ch);
+  }
+
+  // Rows
+  for (var r = 1; r <= 10; r++) {
+    // Row header
+    var rh = document.createElement('div');
+    rh.className = 'grid-header';
+    rh.textContent = r;
+    grid.appendChild(rh);
+
+    for (var cc = 1; cc <= 10; cc++) {
+      var key = r + 'x' + cc;
+      var fact = facts[key];
+      var cell = document.createElement('div');
+      cell.className = 'cell ' + STAGE_NAMES[fact.stage];
+      cell.dataset.key = key;
+
+      // Tooltip
+      var tip = document.createElement('div');
+      tip.className = 'cell-tip';
+      tip.textContent = r + ' \u00d7 ' + cc + ' = ' + (r * cc);
+      cell.appendChild(tip);
+
+      // Flower/icon
+      if (fact.stage > 0) {
+        var flower = document.createElement('span');
+        flower.className = 'flower';
+        flower.textContent = FLOWERS[fact.stage - 1];
+        cell.appendChild(flower);
+      }
+
+      (function(k) {
+        cell.addEventListener('click', function() {
+          askQuestion(k);
+        });
+      })(key);
+
+      grid.appendChild(cell);
+    }
+  }
+
+  updateStats();
+}
+
+function updateStats() {
+  var mastered = 0;
+  for (var k in facts) {
+    if (facts[k].stage >= 4) mastered++;
+  }
+  document.getElementById('stat-mastered').textContent = 'Mastered: ' + mastered + ' / 100';
+  document.getElementById('stat-streak').textContent = 'Streak: ' + currentStreak;
+  document.getElementById('stat-session').textContent = 'Session: ' + sessionCorrect;
+}
+
+// ===== SPACED REPETITION: PICK NEXT FACT =====
+function pickNextFact() {
+  // Priority:
+  // 1. Facts she got wrong recently (wrongCount > 0, not mastered)
+  // 2. New facts (stage 0) — pick ones adjacent to learned facts, or easiest first
+  // 3. Facts due for review (mastered but reviewAfter <= sessionCount)
+  // 4. In-progress facts (stage 1-3)
+
+  var wrong = [];
+  var newFacts = [];
+  var review = [];
+  var inProgress = [];
+
+  for (var k in facts) {
+    var f = facts[k];
+    if (f.stage < 4 && f.wrongCount > 0) wrong.push(k);
+    else if (f.stage === 0) newFacts.push(k);
+    else if (f.stage >= 4 && f.reviewAfter <= sessionCount) review.push(k);
+    else if (f.stage > 0 && f.stage < 4) inProgress.push(k);
+  }
+
+  // Sort wrong by most wrong first
+  wrong.sort(function(a, b) { return facts[b].wrongCount - facts[a].wrongCount; });
+
+  if (wrong.length > 0) return wrong[0];
+  if (inProgress.length > 0) return inProgress[Math.floor(Math.random() * inProgress.length)];
+
+  // New facts: prioritize easier ones (lower product)
+  if (newFacts.length > 0) {
+    newFacts.sort(function(a, b) {
+      var pa = a.split('x'); var pb = b.split('x');
+      return (parseInt(pa[0]) * parseInt(pa[1])) - (parseInt(pb[0]) * parseInt(pb[1]));
+    });
+    // Pick from the easier third randomly
+    var pool = newFacts.slice(0, Math.max(5, Math.ceil(newFacts.length / 3)));
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  if (review.length > 0) return review[Math.floor(Math.random() * review.length)];
+
+  // All mastered and no reviews due
+  return null;
+}
+
+// ===== PRACTICE BUTTON =====
+function practiceNext() {
+  var key = pickNextFact();
+  if (!key) {
+    alert('Amazing! You\'ve mastered every fact and no reviews are due. Come back later!');
+    return;
+  }
+  askQuestion(key);
+}
+
+// ===== ASK QUESTION =====
+function askQuestion(key) {
+  currentFact = key;
+  isAnswered = false;
+  var parts = key.split('x');
+  var a = parseInt(parts[0], 10);
+  var b = parseInt(parts[1], 10);
+  var answer = a * b;
+  var fact = facts[key];
+
+  // Determine input mode: multiple choice for stages 0-1, typed for 2+
+  var useChoices = fact.stage < 2;
+
+  var factEl = document.getElementById('q-fact');
+  var choicesArea = document.getElementById('q-choices-area');
+  var feedbackEl = document.getElementById('q-feedback');
+  var streakEl = document.getElementById('q-streak');
+  var levelEl = document.getElementById('q-level');
+
+  factEl.textContent = a + ' \u00d7 ' + b + ' = ?';
+  feedbackEl.textContent = '';
+  feedbackEl.className = 'feedback';
+  streakEl.textContent = currentStreak > 0 ? ('Streak: ' + currentStreak) : '';
+
+  var stageLabel = fact.stage >= 4 ? 'Mastered (review)' : STAGE_NAMES[fact.stage];
+  levelEl.textContent = stageLabel + ' \u2014 ' + fact.correct + ' correct';
+
+  clearChildren(choicesArea);
+
+  if (useChoices) {
+    // Multiple choice: 1 correct + 3 wrong
+    var wrongs = generateWrongAnswers(answer, 3);
+    var options = shuffleArray([answer].concat(wrongs));
+
+    var choicesDiv = document.createElement('div');
+    choicesDiv.className = 'choices';
+
+    for (var i = 0; i < options.length; i++) {
+      var btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = options[i];
+      (function(opt, button) {
+        btn.addEventListener('click', function() {
+          if (isAnswered) return;
+          handleAnswer(opt === answer, answer, button, null);
+        });
+      })(options[i], btn);
+      choicesDiv.appendChild(btn);
+    }
+    choicesArea.appendChild(choicesDiv);
+  } else {
+    // Type input
+    var inputArea = document.createElement('div');
+    inputArea.className = 'type-input-area';
+
+    var input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'type-input';
+    input.id = 'type-answer';
+    input.autocomplete = 'off';
+    input.placeholder = '?';
+
+    var submitBtn = document.createElement('button');
+    submitBtn.className = 'submit-type-btn';
+    submitBtn.textContent = 'Go';
+
+    function checkTyped() {
+      if (isAnswered) return;
+      var val = parseInt(input.value, 10);
+      if (isNaN(val)) return;
+      handleAnswer(val === answer, answer, null, input);
+    }
+
+    submitBtn.addEventListener('click', checkTyped);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); checkTyped(); }
+    });
+
+    inputArea.appendChild(input);
+    inputArea.appendChild(submitBtn);
+    choicesArea.appendChild(inputArea);
+
+    setTimeout(function() { input.focus(); }, 100);
+  }
+
+  document.getElementById('question-overlay').classList.remove('hidden');
+}
+
+function handleAnswer(correct, correctAnswer, choiceBtn, inputEl) {
+  isAnswered = true;
+  var fact = facts[currentFact];
+  var feedbackEl = document.getElementById('q-feedback');
+  var streakEl = document.getElementById('q-streak');
+
+  if (correct) {
+    currentStreak++;
+    sessionCorrect++;
+    fact.correct++;
+    fact.streak++;
+    fact.wrongCount = Math.max(0, fact.wrongCount - 1);
+    fact.lastSeen = sessionCount;
+
+    // Advance stage?
+    if (fact.stage < 4) {
+      var threshold = STAGE_THRESHOLDS[fact.stage];
+      if (fact.correct >= threshold) {
+        fact.stage++;
+        if (fact.stage >= 4) {
+          fact.reviewAfter = sessionCount + REVIEW_INTERVALS[0];
+        }
+      }
+    } else {
+      // Already mastered: extend review interval
+      var idx = REVIEW_INTERVALS.indexOf(fact.reviewAfter - fact.lastSeen);
+      if (idx < 0) idx = 0;
+      var nextIdx = Math.min(idx + 1, REVIEW_INTERVALS.length - 1);
+      fact.reviewAfter = sessionCount + REVIEW_INTERVALS[nextIdx];
+    }
+
+    feedbackEl.textContent = 'Correct!';
+    feedbackEl.className = 'feedback correct-fb';
+
+    if (choiceBtn) {
+      choiceBtn.classList.add('correct');
+    } else if (inputEl) {
+      inputEl.classList.add('correct');
+    }
+
+    // Particles
+    var panel = document.getElementById('question-panel');
+    spawnParticles(panel);
+
+    saveState();
+    updateStats();
+
+    setTimeout(function() {
+      closeQuestion();
+      renderGrid();
+      // Auto-advance to next question
+      var next = pickNextFact();
+      if (next) {
+        setTimeout(function() { askQuestion(next); }, 300);
+      }
+    }, 800);
+
+  } else {
+    currentStreak = 0;
+    fact.wrongCount++;
+    fact.streak = 0;
+    fact.lastSeen = sessionCount;
+
+    // Demote stage if they get it wrong at higher stages
+    if (fact.stage > 1) {
+      fact.stage--;
+      fact.correct = Math.max(0, fact.correct - 1);
+    }
+
+    feedbackEl.textContent = 'It\'s ' + correctAnswer + '. Try to remember!';
+    feedbackEl.className = 'feedback wrong-fb';
+
+    if (choiceBtn) {
+      choiceBtn.classList.add('wrong');
+      // Highlight correct
+      var allBtns = document.querySelectorAll('.choice-btn');
+      allBtns.forEach(function(b) {
+        if (parseInt(b.textContent, 10) === correctAnswer) b.classList.add('correct');
+      });
+    } else if (inputEl) {
+      inputEl.classList.add('wrong');
+      inputEl.value = correctAnswer;
+    }
+
+    saveState();
+    updateStats();
+
+    setTimeout(function() {
+      closeQuestion();
+      renderGrid();
+    }, 1800);
+  }
+
+  streakEl.textContent = currentStreak > 0 ? ('Streak: ' + currentStreak) : '';
+}
+
+function closeQuestion() {
+  document.getElementById('question-overlay').classList.add('hidden');
+  currentFact = null;
+  isAnswered = false;
+}
+
+// ===== WRONG ANSWER GENERATOR =====
+function generateWrongAnswers(correct, count) {
+  var wrongs = [];
+  var candidates = [];
+
+  // Near misses: +/- 1-3 of the correct answer's neighbors
+  for (var d = -3; d <= 3; d++) {
+    if (d !== 0 && correct + d > 0) candidates.push(correct + d);
+  }
+  // Common confusion: +/- 10
+  if (correct + 10 <= 100) candidates.push(correct + 10);
+  if (correct - 10 > 0) candidates.push(correct - 10);
+  // Digit swap if applicable
+  if (correct >= 10) {
+    var swapped = parseInt(String(correct).split('').reverse().join(''), 10);
+    if (swapped !== correct && swapped > 0) candidates.push(swapped);
+  }
+
+  // Shuffle and pick unique
+  candidates = shuffleArray(candidates);
+  for (var i = 0; i < candidates.length && wrongs.length < count; i++) {
+    if (candidates[i] !== correct && wrongs.indexOf(candidates[i]) === -1) {
+      wrongs.push(candidates[i]);
+    }
+  }
+
+  // Fill remaining with random if needed
+  while (wrongs.length < count) {
+    var r = Math.floor(Math.random() * 100) + 1;
+    if (r !== correct && wrongs.indexOf(r) === -1) wrongs.push(r);
+  }
+
+  return wrongs;
+}
+
+// ===== EFFECTS =====
+function spawnParticles(sourceEl) {
+  var rect = sourceEl.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top + rect.height / 2;
+  var colors = ['#66bb6a','#f9ca24','#ff6b6b','#42a5f5','#ab47bc','#ff7043'];
+
+  for (var i = 0; i < 10; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = '8px';
+    p.style.height = '8px';
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    document.body.appendChild(p);
+
+    var angle = (Math.PI * 2 * i) / 10;
+    var dist = 40 + Math.random() * 60;
+    var dx = Math.cos(angle) * dist;
+    var dy = Math.sin(angle) * dist;
+
+    p.animate([
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+      { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(0)', opacity: 0 }
+    ], { duration: 500, easing: 'ease-out' });
+
+    (function(particle) {
+      setTimeout(function() { particle.remove(); }, 500);
+    })(p);
+  }
+}
+
+// ===== RESET =====
+function confirmReset() {
+  if (confirm('This will erase all your garden progress. Are you sure?')) {
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+}
+
+// ===== HELPERS =====
+function clearChildren(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+// ===== INIT =====
+loadState();
+renderGrid();
+</script>
+</body>
+</html>
