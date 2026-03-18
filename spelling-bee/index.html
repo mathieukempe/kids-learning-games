@@ -359,6 +359,7 @@ body.shake { animation: shake 0.4s ease; }
     ⚠️ Your browser does not support text-to-speech. The game requires audio to play.
   </div>
   <button class="btn-start" id="start-btn">Start</button>
+  <a href="../" style="color: rgba(255,255,255,0.4); margin-top: 20px; font-size: 14px;">&#8592; Back to games</a>
 </div>
 
 <!-- ══ Game Screen ══ -->
@@ -399,6 +400,7 @@ body.shake { animation: shake 0.4s ease; }
   <p class="result-block">Best streak: <span class="highlight best" id="over-best">0</span></p>
   <div id="new-record">🏆 New Record!</div>
   <button class="btn-start" id="play-again-btn">Play Again</button>
+  <a href="../" style="color: rgba(255,255,255,0.4); margin-top: 20px; font-size: 14px;">&#8592; Back to games</a>
 </div>
 
 <script>
@@ -408,7 +410,7 @@ body.shake { animation: shake 0.4s ease; }
    Word lists
 ══════════════════════════════════════════ */
 const WORDS_EN = [
-  "necessary", "separate", "rhythm", "beautiful", "Wednesday",
+  "necessary", "separate", "rhythm", "beautiful", "wednesday",
   "environment", "accommodation", "definitely", "occurrence", "embarrass",
   "conscience", "privilege", "restaurant", "temperature", "immediately",
   "beginning", "calendar", "cemetery", "committee", "experience",
@@ -433,7 +435,7 @@ const WORDS_EN = [
 
 const WORDS_FR = [
   "aujourd'hui", "beaucoup", "bibliothèque", "papillon", "tranquille",
-  "appareil", "conscience", "accueillir", "malheureusement", "nécessaire",
+  "appareil", "chrysanthème", "accueillir", "malheureusement", "nécessaire",
   "développement", "environnement", "gouvernement", "quelquefois", "maintenant",
   "certainement", "accompagner", "approfondir", "apprentissage", "bouilloire",
   "brouillard", "cueillette", "éblouissant", "effervescent", "enveloppe",
@@ -637,6 +639,7 @@ function checkAnswer() {
     hudStreak.textContent = streak;
     if (streak > bestStreak) {
       bestStreak = streak;
+      localStorage.setItem(LS_KEY, bestStreak);
       updateBestDisplay();
     }
     wordInput.classList.add('input-correct');
