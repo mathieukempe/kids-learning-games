@@ -40,6 +40,7 @@ Similarly tricky French words: "aujourd'hui", "beaucoup", "bibliothèque", "papi
 - Input supports accented characters
 - Comparison is exact: "francais" is wrong if the word is "français"
 - This teaches proper accent usage
+- **On-screen accent helper:** When a French word is active, show a row of clickable accent buttons (é, è, ê, ë, à, â, ç, î, ï, ô, ù, û) above the input field. Clicking a button inserts that character at the cursor position. Hidden for English words.
 
 ## Audio — Web Speech API
 
