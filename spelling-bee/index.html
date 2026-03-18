@@ -249,9 +249,15 @@ body {
 }
 
 #feedback {
-  font-size: 16px;
-  min-height: 24px;
-  font-weight: 600;
+  font-size: 32px;
+  min-height: 40px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#feedback.visible {
+  opacity: 1;
 }
 
 .feedback-wrong {
@@ -381,7 +387,7 @@ body.shake { animation: shake 0.4s ease; }
     <button id="submit-btn">Check ✓</button>
   </div>
 
-  <p id="hint-text">Press Enter or click Check</p>
+  <p id="hint-text">Type what you hear</p>
   <div id="feedback"></div>
 </div>
 
@@ -646,7 +652,8 @@ function checkAnswer() {
     wordInput.classList.add('input-wrong');
     document.body.classList.add('shake');
     feedback.className = 'feedback-wrong';
-    feedback.textContent = 'The correct spelling: ' + currentWord.word;
+    feedback.textContent = currentWord.word;
+    requestAnimationFrame(() => feedback.classList.add('visible'));
     setTimeout(() => {
       document.body.classList.remove('shake');
       endGame();
