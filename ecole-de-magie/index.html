@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'École de Magie — Conjugaison</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a0a2e 100%);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Back Link ── */
+.back-link {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 15px;
+  z-index: 100;
+  transition: color 0.2s;
+}
+.back-link:hover { color: #ffd866; }
+
+/* ── Starry Background ── */
+.stars, .stars2, .stars3 {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stars::after, .stars2::after, .stars3::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.stars::after {
+  box-shadow:
+    25px 30px #fff, 80px 90px #fff, 150px 20px #fff, 210px 150px #fff,
+    300px 60px #fff, 380px 200px #fff, 450px 40px #fff, 520px 180px #fff,
+    600px 80px #fff, 680px 250px #fff, 750px 30px #fff, 820px 160px #fff,
+    50px 300px #fff, 130px 350px #fff, 240px 280px #fff, 340px 320px #fff,
+    420px 380px #fff, 510px 310px #fff, 590px 360px #fff, 670px 290px #fff,
+    760px 340px #fff, 840px 380px #fff, 100px 420px #fff, 200px 460px #fff,
+    320px 440px #fff, 440px 480px #fff, 560px 420px #fff, 650px 460px #fff,
+    730px 500px #fff, 810px 440px #fff, 900px 50px #fff, 950px 200px #fff,
+    1000px 120px #fff, 1050px 300px #fff, 1100px 80px #fff, 1150px 250px #fff,
+    1200px 160px #fff, 1250px 350px #fff, 1300px 40px #fff, 1350px 280px #fff,
+    900px 400px #fff, 1000px 450px #fff, 1100px 380px #fff, 1200px 500px #fff,
+    170px 520px #fff, 290px 560px #fff, 410px 540px #fff, 530px 580px #fff,
+    660px 530px #fff, 780px 570px #fff, 890px 520px #fff, 1020px 560px #fff;
+  animation: twinkle1 4s ease-in-out infinite;
+}
+
+.stars2::after {
+  box-shadow:
+    45px 70px rgba(255,255,255,0.7), 120px 130px rgba(255,255,255,0.6),
+    190px 50px rgba(255,255,255,0.8), 270px 190px rgba(255,255,255,0.5),
+    360px 100px rgba(255,255,255,0.7), 430px 240px rgba(255,255,255,0.6),
+    500px 70px rgba(255,255,255,0.8), 580px 220px rgba(255,255,255,0.5),
+    660px 120px rgba(255,255,255,0.7), 740px 290px rgba(255,255,255,0.6),
+    810px 50px rgba(255,255,255,0.8), 880px 190px rgba(255,255,255,0.5),
+    60px 340px rgba(255,255,255,0.7), 180px 400px rgba(255,255,255,0.6),
+    280px 360px rgba(255,255,255,0.8), 390px 420px rgba(255,255,255,0.5),
+    480px 350px rgba(255,255,255,0.7), 570px 410px rgba(255,255,255,0.6),
+    950px 140px rgba(255,255,255,0.7), 1060px 230px rgba(255,255,255,0.6),
+    1140px 50px rgba(255,255,255,0.8), 1230px 180px rgba(255,255,255,0.5),
+    700px 480px rgba(255,255,255,0.7), 850px 510px rgba(255,255,255,0.6);
+  animation: twinkle2 5s ease-in-out infinite;
+}
+
+.stars3::after {
+  width: 3px; height: 3px;
+  box-shadow:
+    110px 60px #ffd866, 350px 150px #ffd866, 580px 40px #ffd866,
+    780px 200px #ffd866, 1000px 90px #ffd866, 250px 400px #ffd866,
+    620px 350px #ffd866, 900px 450px #ffd866, 450px 500px #ffd866,
+    1200px 300px #ffd866;
+  animation: twinkle3 6s ease-in-out infinite;
+}
+
+@keyframes twinkle1 {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes twinkle2 {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+@keyframes twinkle3 {
+  0%, 100% { opacity: 1; }
+  33% { opacity: 0.3; }
+  66% { opacity: 0.8; }
+}
+
+/* ── Castle Silhouette ── */
+.castle {
+  position: fixed;
+  bottom: 0; left: 0;
+  width: 100%; height: 220px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.castle svg {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 220px;
+}
+
+/* ── Screens ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 24px;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+.screen.active { display: flex; }
+
+/* ── Title Screen ── */
+#title-screen .game-icon {
+  font-size: 80px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.6));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+#title-screen h1 {
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #ffd866, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+#title-screen .subtitle {
+  font-size: 18px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 32px;
+}
+
+#title-screen .stats {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 24px;
+  line-height: 1.8;
+}
+#title-screen .stats span {
+  color: #ffd866;
+  font-weight: 700;
+}
+
+.btn {
+  border: none;
+  border-radius: 16px;
+  padding: 16px 48px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  margin: 6px;
+}
+.btn:hover {
+  transform: translateY(-2px);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-play {
+  background: linear-gradient(135deg, #ffd866, #f0c040);
+  color: #1a0a2e;
+  box-shadow: 0 4px 24px rgba(255,216,102,0.4);
+}
+.btn-play:hover {
+  box-shadow: 0 6px 32px rgba(255,216,102,0.6);
+}
+
+.btn-continue {
+  background: rgba(168,85,247,0.25);
+  color: #d8b4fe;
+  border: 2px solid rgba(168,85,247,0.4);
+  box-shadow: 0 4px 20px rgba(168,85,247,0.2);
+}
+.btn-continue:hover {
+  background: rgba(168,85,247,0.35);
+  box-shadow: 0 6px 28px rgba(168,85,247,0.3);
+}
+
+/* ── Placeholder screens ── */
+#round-intro-screen,
+#round-play-screen,
+#round-summary-screen,
+#victory-screen {
+  color: rgba(255,255,255,0.3);
+  font-size: 24px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  #title-screen h1 { font-size: 34px; }
+  #title-screen .game-icon { font-size: 60px; }
+  .btn { padding: 14px 36px; font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">&larr; Accueil</a>
+
+<!-- Starry background layers -->
+<div class="stars"></div>
+<div class="stars2"></div>
+<div class="stars3"></div>
+
+<!-- Castle silhouette -->
+<div class="castle">
+  <svg viewBox="0 0 1440 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="
+      M0,220 L0,180 L40,180 L40,140 L50,140 L50,120 L60,120 L60,140 L70,140 L70,180
+      L120,180 L120,160 L130,160 L130,140 L140,140 L140,160 L150,160 L150,180
+      L250,180 L250,130 L260,130 L260,90 L265,70 L270,90 L280,90 L280,130 L290,130 L290,180
+      L380,180 L380,150 L390,150 L390,130 L395,110 L400,130 L410,130 L410,150 L420,150 L420,180
+      L500,180 L500,160 L510,160 L510,180
+      L600,180 L600,100 L610,100 L610,60 L615,30 L620,60 L630,60 L630,100
+      L640,100 L640,80 L650,80 L650,50 L655,20 L660,50 L670,50 L670,80 L680,80 L680,100
+      L690,100 L690,60 L695,30 L700,60 L710,60 L710,100 L720,100 L720,180
+      L800,180 L800,150 L810,150 L810,130 L815,110 L820,130 L830,130 L830,150 L840,150 L840,180
+      L920,180 L920,160 L930,160 L930,140 L940,140 L940,160 L950,160 L950,180
+      L1040,180 L1040,130 L1050,130 L1050,90 L1055,65 L1060,90 L1070,90 L1070,130 L1080,130 L1080,180
+      L1160,180 L1160,150 L1170,150 L1170,180
+      L1260,180 L1260,140 L1270,140 L1270,120 L1280,120 L1280,140 L1290,140 L1290,180
+      L1360,180 L1360,160 L1370,160 L1370,140 L1375,120 L1380,140 L1390,140 L1390,160 L1400,160 L1400,180
+      L1440,180 L1440,220 Z
+    " fill="#0a0514" />
+    <path d="
+      M0,220 L0,200 L200,200 L200,190 L220,190 L220,200
+      L500,200 L500,195 L510,195 L510,200
+      L700,200 L700,190 L720,190 L720,200
+      L1000,200 L1000,195 L1010,195 L1010,200
+      L1300,200 L1300,190 L1320,190 L1320,200
+      L1440,200 L1440,220 Z
+    " fill="#080410" />
+    <!-- Windows glowing -->
+    <rect x="618" y="75" width="6" height="8" rx="1" fill="#ffd866" opacity="0.6" />
+    <rect x="653" y="36" width="5" height="7" rx="1" fill="#ffd866" opacity="0.5" />
+    <rect x="693" y="75" width="6" height="8" rx="1" fill="#ffd866" opacity="0.6" />
+    <rect x="268" y="100" width="5" height="7" rx="1" fill="#ffd866" opacity="0.4" />
+    <rect x="1053" y="100" width="5" height="7" rx="1" fill="#ffd866" opacity="0.5" />
+    <rect x="393" y="135" width="5" height="6" rx="1" fill="#a855f7" opacity="0.4" />
+    <rect x="813" y="135" width="5" height="6" rx="1" fill="#a855f7" opacity="0.4" />
+  </svg>
+</div>
+
+<!-- ══════════════ TITLE SCREEN ══════════════ -->
+<div class="screen active" id="title-screen">
+  <div class="game-icon">🏰</div>
+  <h1>L'École de Magie</h1>
+  <p class="subtitle">Maîtrise la conjugaison pour devenir sorcier !</p>
+  <div class="stats">
+    Meilleure série : <span id="best-streak">0</span><br>
+    Cristaux récoltés : <span id="best-crystals">0</span> 💎
+  </div>
+  <button class="btn btn-play" id="btn-play">Jouer</button>
+  <button class="btn btn-continue" id="btn-continue" style="display:none;">Continuer</button>
+</div>
+
+<!-- ══════════════ ROUND INTRO SCREEN ══════════════ -->
+<div class="screen" id="round-intro-screen">
+</div>
+
+<!-- ══════════════ ROUND PLAY SCREEN ══════════════ -->
+<div class="screen" id="round-play-screen">
+</div>
+
+<!-- ══════════════ ROUND SUMMARY SCREEN ══════════════ -->
+<div class="screen" id="round-summary-screen">
+</div>
+
+<!-- ══════════════ VICTORY SCREEN ══════════════ -->
+<div class="screen" id="victory-screen">
+</div>
+
+<script>
+/* ── Screen Management ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id + '-screen');
+  if (target) target.classList.add('active');
+}
+
+/* ── Local Storage Keys ── */
+const LS_PREFIX = 'ecoleDeMagie_';
+const LS_CURRENT_ROUND = LS_PREFIX + 'currentRound';
+const LS_BEST_STREAK = LS_PREFIX + 'bestStreak';
+const LS_BEST_CRYSTALS = LS_PREFIX + 'bestCrystals';
+const LS_GAME_STATE = LS_PREFIX + 'gameState';
+
+/* ── Title Screen Setup ── */
+function initTitleScreen() {
+  // Display best stats
+  const bestStreak = localStorage.getItem(LS_BEST_STREAK) || '0';
+  const bestCrystals = localStorage.getItem(LS_BEST_CRYSTALS) || '0';
+  document.getElementById('best-streak').textContent = bestStreak;
+  document.getElementById('best-crystals').textContent = bestCrystals;
+
+  // Show "Continuer" button if a saved game exists
+  const savedRound = localStorage.getItem(LS_CURRENT_ROUND);
+  const btnContinue = document.getElementById('btn-continue');
+  if (savedRound) {
+    btnContinue.style.display = '';
+  } else {
+    btnContinue.style.display = 'none';
+  }
+}
+
+/* ── Game Start (stub) ── */
+function startGame(fromRound) {
+  const round = fromRound || 1;
+  console.log('startGame() called — starting from round ' + round);
+  // TODO: implement in next task
+}
+
+/* ── Button Handlers ── */
+document.getElementById('btn-play').addEventListener('click', function() {
+  // Reset game state
+  localStorage.removeItem(LS_CURRENT_ROUND);
+  localStorage.removeItem(LS_GAME_STATE);
+  startGame(1);
+});
+
+document.getElementById('btn-continue').addEventListener('click', function() {
+  const savedRound = parseInt(localStorage.getItem(LS_CURRENT_ROUND), 10) || 1;
+  startGame(savedRound);
+});
+
+/* ── Init ── */
+initTitleScreen();
+showScreen('title');
+</script>
+</body>
+</html>
