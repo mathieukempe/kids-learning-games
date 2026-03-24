@@ -669,6 +669,138 @@ body {
   90% { transform: translateX(3px); }
 }
 
+/* ── Rune Matching ── */
+#rune-matching {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.rune-board {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  position: relative;
+}
+
+.rune-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 2;
+}
+
+.rune-column.pronouns { align-items: flex-end; }
+.rune-column.conjugations { align-items: flex-start; }
+
+.match-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.match-lines line {
+  stroke: #a855f7;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: url(#glow-filter);
+  opacity: 0;
+  animation: line-appear 0.4s ease-out forwards;
+}
+
+@keyframes line-appear {
+  0% { opacity: 0; stroke-width: 1; }
+  100% { opacity: 0.8; stroke-width: 3; }
+}
+
+.rune {
+  min-width: 110px;
+  min-height: 54px;
+  padding: 12px 18px;
+  border: 2px solid rgba(168,85,247,0.4);
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #e2d5f5;
+  cursor: pointer;
+  background: linear-gradient(145deg, #2a1a4e 0%, #1a0e35 100%);
+  box-shadow: 0 0 12px rgba(168,85,247,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s;
+  text-align: center;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+}
+
+.rune::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(168,85,247,0.15), transparent 60%);
+  pointer-events: none;
+}
+
+.rune:hover:not(.matched):not(.wrong) {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.rune.selected {
+  border-color: #c084fc;
+  box-shadow: 0 0 24px rgba(192,132,252,0.6), 0 0 48px rgba(168,85,247,0.3);
+  transform: scale(1.08);
+  color: #fff;
+}
+
+.rune.matched {
+  border-color: #22c55e;
+  background: linear-gradient(145deg, #0f3a1e 0%, #0a2912 100%);
+  box-shadow: 0 0 20px rgba(34,197,94,0.4);
+  color: rgba(255,255,255,0.6);
+  opacity: 0.7;
+  pointer-events: none;
+  cursor: default;
+  transform: scale(0.97);
+}
+
+.rune.wrong {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239,68,68,0.5);
+  animation: rune-shake 0.5s ease-out;
+}
+
+@keyframes rune-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  90% { transform: translateX(2px); }
+}
+
+.rune-drag-line {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(192,132,252,0.8), rgba(255,216,102,0.8));
+  box-shadow: 0 0 10px rgba(192,132,252,0.5);
+  border-radius: 3px;
+  transform-origin: 0 50%;
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   #title-screen h1 { font-size: 34px; }
@@ -680,6 +812,8 @@ body {
   .grimoire-book { min-height: 110px; }
   .sentence-display { font-size: 22px; padding: 18px 14px; }
   .scroll { font-size: 20px; padding: 14px 18px; }
+  .rune { min-width: 90px; min-height: 48px; font-size: 17px; padding: 10px 12px; }
+  .rune-board { gap: 0; }
 }
 </style>
 </head>
@@ -781,6 +915,18 @@ body {
     </div>
     <div class="sentence-display" id="sentence-display"></div>
     <div class="scrolls" id="sentence-scrolls"></div>
+  </div>
+  <div id="rune-matching" class="hidden">
+    <div class="spell-hud">
+      <span class="spell-hud-crystals">💎 <span id="rune-crystals">0</span></span>
+      <span class="spell-hud-progress" id="rune-progress">0 / 6</span>
+      <span class="spell-hud-streak">🔥 <span id="rune-streak">0</span></span>
+    </div>
+    <div class="rune-board">
+      <div class="rune-column pronouns" id="rune-pronouns"></div>
+      <svg class="match-lines" id="match-lines"></svg>
+      <div class="rune-column conjugations" id="rune-conjugations"></div>
+    </div>
   </div>
 </div>
 
@@ -1255,7 +1401,253 @@ function handleScrollClick(btn, chosen, correctAnswer, verb, questions, question
     updateSentenceHud();
   }
 }
-function startRuneMatching(verb) { console.log('TODO: Rune Matching for', verb); }
+/* ── Rune Matching Mechanic ── */
+var runeState = {
+  verb: '',
+  conjugations: [],
+  selectedPronoun: null,
+  matchedCount: 0,
+  firstTryMap: {},
+  dragging: false,
+  dragPronoun: null,
+  dragLine: null
+};
+
+function startRuneMatching(verb) {
+  var container = document.getElementById('rune-matching');
+  container.classList.remove('hidden');
+  document.getElementById('spell-casting').classList.add('hidden');
+  document.getElementById('enchanted-sentences').classList.add('hidden');
+
+  runeState.verb = verb;
+  runeState.conjugations = VERBS[verb].conjugations.slice();
+  runeState.selectedPronoun = null;
+  runeState.matchedCount = 0;
+  runeState.firstTryMap = {};
+  runeState.dragging = false;
+  runeState.dragPronoun = null;
+
+  // Init firstTry per pronoun
+  for (var i = 0; i < runeState.conjugations.length; i++) {
+    runeState.firstTryMap[runeState.conjugations[i].pronoun] = true;
+  }
+
+  // Reset question counter for this round
+  state.currentQuestion = 0;
+
+  renderRunes();
+  updateRuneHud();
+}
+
+function updateRuneHud() {
+  document.getElementById('rune-crystals').textContent = state.crystals;
+  document.getElementById('rune-progress').textContent = runeState.matchedCount + ' / 6';
+  document.getElementById('rune-streak').textContent = state.streak;
+}
+
+function renderRunes() {
+  var pronounsCol = document.getElementById('rune-pronouns');
+  var conjCol = document.getElementById('rune-conjugations');
+  var svgEl = document.getElementById('match-lines');
+
+  pronounsCol.textContent = '';
+  conjCol.textContent = '';
+  svgEl.innerHTML = '<defs><filter id="glow-filter"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+
+  // Pronouns in order, conjugations shuffled
+  var shuffledConj = shuffleArray(runeState.conjugations);
+
+  for (var i = 0; i < runeState.conjugations.length; i++) {
+    var pData = runeState.conjugations[i];
+    var pEl = document.createElement('div');
+    pEl.className = 'rune rune-pronoun';
+    pEl.textContent = pData.pronoun;
+    pEl.dataset.pronoun = pData.pronoun;
+    pEl.dataset.form = pData.form;
+    pronounsCol.appendChild(pEl);
+
+    // Pointer events for drag
+    pEl.addEventListener('pointerdown', onPronounPointerDown);
+  }
+
+  for (var j = 0; j < shuffledConj.length; j++) {
+    var cData = shuffledConj[j];
+    var cEl = document.createElement('div');
+    cEl.className = 'rune rune-conjugation';
+    cEl.textContent = cData.form;
+    cEl.dataset.form = cData.form;
+    cEl.dataset.pronoun = cData.pronoun;
+    conjCol.appendChild(cEl);
+
+    // Tap handler for conjugation
+    cEl.addEventListener('pointerup', onConjugationPointerUp);
+  }
+
+  // Global pointer move/up for drag
+  document.addEventListener('pointermove', onRunePointerMove);
+  document.addEventListener('pointerup', onRunePointerUp);
+}
+
+function onPronounPointerDown(e) {
+  var el = e.currentTarget;
+  if (el.classList.contains('matched')) return;
+  e.preventDefault();
+
+  // If tapping same selected pronoun, deselect
+  if (runeState.selectedPronoun && runeState.selectedPronoun === el) {
+    el.classList.remove('selected');
+    runeState.selectedPronoun = null;
+    return;
+  }
+
+  // Deselect previous
+  if (runeState.selectedPronoun) {
+    runeState.selectedPronoun.classList.remove('selected');
+  }
+
+  el.classList.add('selected');
+  runeState.selectedPronoun = el;
+
+  // Start drag
+  runeState.dragging = true;
+  runeState.dragPronoun = el;
+
+  // Create drag line
+  if (runeState.dragLine) runeState.dragLine.remove();
+  var line = document.createElement('div');
+  line.className = 'rune-drag-line';
+  document.body.appendChild(line);
+  runeState.dragLine = line;
+
+  updateDragLine(e.clientX, e.clientY);
+}
+
+function updateDragLine(clientX, clientY) {
+  if (!runeState.dragLine || !runeState.dragPronoun) return;
+  var rect = runeState.dragPronoun.getBoundingClientRect();
+  var startX = rect.right;
+  var startY = rect.top + rect.height / 2;
+  var dx = clientX - startX;
+  var dy = clientY - startY;
+  var length = Math.sqrt(dx * dx + dy * dy);
+  var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  var line = runeState.dragLine;
+  line.style.left = startX + 'px';
+  line.style.top = startY + 'px';
+  line.style.width = length + 'px';
+  line.style.transform = 'rotate(' + angle + 'deg)';
+}
+
+function onRunePointerMove(e) {
+  if (!runeState.dragging) return;
+  e.preventDefault();
+  updateDragLine(e.clientX, e.clientY);
+}
+
+function onRunePointerUp(e) {
+  if (!runeState.dragging) return;
+  runeState.dragging = false;
+
+  // Remove drag line
+  if (runeState.dragLine) {
+    runeState.dragLine.remove();
+    runeState.dragLine = null;
+  }
+
+  // Check if pointer is over a conjugation rune
+  var target = document.elementFromPoint(e.clientX, e.clientY);
+  if (target && target.classList.contains('rune-conjugation') && !target.classList.contains('matched')) {
+    tryMatch(runeState.dragPronoun, target);
+  }
+
+  runeState.dragPronoun = null;
+}
+
+function onConjugationPointerUp(e) {
+  // Tap-to-select mode: if a pronoun is selected and we're not dragging
+  if (runeState.dragging) return;
+  var conjEl = e.currentTarget;
+  if (conjEl.classList.contains('matched')) return;
+
+  if (runeState.selectedPronoun && !runeState.selectedPronoun.classList.contains('matched')) {
+    e.stopPropagation();
+    tryMatch(runeState.selectedPronoun, conjEl);
+  }
+}
+
+function tryMatch(pronounEl, conjEl) {
+  var pronoun = pronounEl.dataset.pronoun;
+  var expectedForm = pronounEl.dataset.form;
+  var chosenForm = conjEl.dataset.form;
+
+  if (chosenForm === expectedForm) {
+    // Correct match
+    pronounEl.classList.remove('selected');
+    pronounEl.classList.add('matched');
+    conjEl.classList.add('matched');
+    runeState.selectedPronoun = null;
+
+    // Set firstTry for endQuestion
+    state.firstTry = runeState.firstTryMap[pronoun];
+
+    runeState.matchedCount++;
+    drawMatchLine(pronounEl, conjEl);
+
+    var result = endQuestion(true);
+    updateRuneHud();
+
+    if (result === 'roundComplete') {
+      // Small delay before hiding
+      setTimeout(function() {
+        cleanupRuneListeners();
+        document.getElementById('rune-matching').classList.add('hidden');
+      }, 600);
+    }
+  } else {
+    // Wrong match
+    runeState.firstTryMap[pronoun] = false;
+    state.firstTry = false;
+
+    pronounEl.classList.add('wrong');
+    conjEl.classList.add('wrong');
+    pronounEl.classList.remove('selected');
+    runeState.selectedPronoun = null;
+
+    endQuestion(false);
+    updateRuneHud();
+
+    setTimeout(function() {
+      pronounEl.classList.remove('wrong');
+      conjEl.classList.remove('wrong');
+    }, 500);
+  }
+}
+
+function drawMatchLine(pronounEl, conjEl) {
+  var svg = document.getElementById('match-lines');
+  var board = svg.getBoundingClientRect();
+
+  var pRect = pronounEl.getBoundingClientRect();
+  var cRect = conjEl.getBoundingClientRect();
+
+  var x1 = pRect.right - board.left;
+  var y1 = pRect.top + pRect.height / 2 - board.top;
+  var x2 = cRect.left - board.left;
+  var y2 = cRect.top + cRect.height / 2 - board.top;
+
+  var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  svg.appendChild(line);
+}
+
+function cleanupRuneListeners() {
+  document.removeEventListener('pointermove', onRunePointerMove);
+  document.removeEventListener('pointerup', onRunePointerUp);
+}
 
 /* ── Button Handlers ── */
 document.getElementById('btn-play').addEventListener('click', function() {
