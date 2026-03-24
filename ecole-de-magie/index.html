@@ -540,6 +540,135 @@ body {
   100% { opacity: 0; width: 160px; }
 }
 
+/* ── Enchanted Sentences ── */
+#enchanted-sentences {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+}
+
+.sentence-display {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  padding: 24px 20px;
+  background: linear-gradient(145deg, #2a1a4e 0%, #1a0e35 100%);
+  border: 2px solid rgba(168,85,247,0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  width: 100%;
+  min-height: 90px;
+  transition: opacity 0.3s, transform 0.4s;
+}
+
+.sentence-display .blank {
+  display: inline-block;
+  min-width: 100px;
+  border-bottom: 3px solid #ffd866;
+  color: #ffd866;
+  animation: blank-pulse 1.5s ease-in-out infinite;
+  padding: 0 4px;
+  margin: 0 4px;
+}
+
+@keyframes blank-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(255,216,102,0.4); border-color: #ffd866; }
+  50% { text-shadow: 0 0 20px rgba(255,216,102,0.8); border-color: #fff; }
+}
+
+.sentence-display.float-away {
+  animation: sentence-float-up 0.6s ease-in forwards;
+}
+
+@keyframes sentence-float-up {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+.scrolls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.scroll {
+  border: none;
+  border-radius: 12px;
+  padding: 18px 24px;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #3b1a08;
+  cursor: pointer;
+  background: linear-gradient(145deg, #f5e6c8 0%, #e8d5a8 30%, #dcc496 70%, #c9b07a 100%);
+  box-shadow: 0 3px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+  transform: rotate(-0.5deg);
+}
+
+.scroll:nth-child(2) { transform: rotate(0.5deg); }
+.scroll:nth-child(3) { transform: rotate(-0.3deg); }
+
+.scroll::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.3), transparent 60%);
+  pointer-events: none;
+}
+
+.scroll:hover:not(:disabled) {
+  transform: translateY(-4px) rotate(0deg);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.scroll:active:not(:disabled) {
+  transform: translateY(0) rotate(0deg);
+}
+
+.scroll:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.scroll.correct {
+  background: linear-gradient(145deg, #ffd866 0%, #f0c040 50%, #e6b020 100%);
+  box-shadow: 0 0 32px rgba(255,216,102,0.7);
+  animation: scroll-correct 0.5s ease-out;
+}
+
+@keyframes scroll-correct {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1.02); }
+}
+
+.scroll.wrong {
+  background: linear-gradient(145deg, #e8a090, #d08070);
+  box-shadow: 0 0 20px rgba(239,68,68,0.5);
+  animation: scroll-shake 0.5s ease-out;
+}
+
+@keyframes scroll-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   #title-screen h1 { font-size: 34px; }
@@ -549,6 +678,8 @@ body {
   .orb { font-size: 20px; min-height: 60px; }
   .wand { display: none; }
   .grimoire-book { min-height: 110px; }
+  .sentence-display { font-size: 22px; padding: 18px 14px; }
+  .scroll { font-size: 20px; padding: 14px 18px; }
 }
 </style>
 </head>
@@ -641,6 +772,15 @@ body {
       <div class="wand-tip">✨</div>
     </div>
     <div class="wand-beam" id="wand-beam"></div>
+  </div>
+  <div id="enchanted-sentences" class="hidden">
+    <div class="spell-hud">
+      <span class="spell-hud-crystals">💎 <span id="sentence-crystals">0</span></span>
+      <span class="spell-hud-progress" id="sentence-progress">1 / 6</span>
+      <span class="spell-hud-streak">🔥 <span id="sentence-streak">0</span></span>
+    </div>
+    <div class="sentence-display" id="sentence-display"></div>
+    <div class="scrolls" id="sentence-scrolls"></div>
   </div>
 </div>
 
@@ -996,7 +1136,125 @@ function handleOrbClick(btn, chosen, correctForm, verb, conjugations, questionIn
     updateSpellHud();
   }
 }
-function startEnchantedSentences(verb) { console.log('TODO: Enchanted Sentences for', verb); }
+/* ── Enchanted Sentences Mechanic ── */
+function startEnchantedSentences(verb) {
+  var container = document.getElementById('enchanted-sentences');
+  container.classList.remove('hidden');
+  document.getElementById('spell-casting').classList.add('hidden');
+
+  // Build one question per pronoun by grouping sentences by answer
+  var conjugations = VERBS[verb].conjugations;
+  var sentences = VERBS[verb].sentences;
+  var questions = [];
+
+  for (var c = 0; c < conjugations.length; c++) {
+    var form = conjugations[c].form;
+    // Find all sentences whose answer matches this conjugation form
+    var matching = [];
+    for (var s = 0; s < sentences.length; s++) {
+      if (sentences[s].answer === form) matching.push(sentences[s]);
+    }
+    if (matching.length > 0) {
+      // Pick a random sentence for this pronoun
+      var pick = matching[Math.floor(Math.random() * matching.length)];
+      questions.push({ text: pick.text, answer: pick.answer });
+    }
+  }
+
+  questions = shuffleArray(questions);
+  updateSentenceHud();
+  showSentenceQuestion(verb, questions, 0);
+}
+
+function updateSentenceHud() {
+  document.getElementById('sentence-crystals').textContent = state.crystals;
+  document.getElementById('sentence-progress').textContent = (state.currentQuestion + 1) + ' / 6';
+  document.getElementById('sentence-streak').textContent = state.streak;
+}
+
+function showSentenceQuestion(verb, questions, questionIndex) {
+  var q = questions[questionIndex];
+  var correctAnswer = q.answer;
+
+  // Build sentence display with blank
+  var displayEl = document.getElementById('sentence-display');
+  displayEl.classList.remove('float-away');
+  displayEl.textContent = '';
+
+  var parts = q.text.split('___');
+  if (parts.length >= 2) {
+    displayEl.appendChild(document.createTextNode(parts[0]));
+    var blankSpan = document.createElement('span');
+    blankSpan.className = 'blank';
+    blankSpan.textContent = '___';
+    displayEl.appendChild(blankSpan);
+    displayEl.appendChild(document.createTextNode(parts[1]));
+  } else {
+    displayEl.textContent = q.text;
+  }
+
+  // Generate 2 distractors + 1 correct = 3 scrolls
+  var distractors = generateDistractors(verb, correctAnswer, 2);
+  var options = shuffleArray([correctAnswer].concat(distractors));
+
+  // Build scroll buttons
+  var scrollsContainer = document.getElementById('sentence-scrolls');
+  scrollsContainer.textContent = '';
+
+  for (var i = 0; i < options.length; i++) {
+    (function(option) {
+      var btn = document.createElement('button');
+      btn.className = 'scroll';
+      btn.textContent = option;
+      btn.addEventListener('click', function() {
+        handleScrollClick(btn, option, correctAnswer, verb, questions, questionIndex);
+      });
+      scrollsContainer.appendChild(btn);
+    })(options[i]);
+  }
+
+  updateSentenceHud();
+}
+
+function handleScrollClick(btn, chosen, correctAnswer, verb, questions, questionIndex) {
+  if (btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+
+  if (chosen === correctAnswer) {
+    btn.classList.add('correct');
+    // Disable all scrolls
+    var allScrolls = document.querySelectorAll('#sentence-scrolls .scroll');
+    for (var i = 0; i < allScrolls.length; i++) {
+      allScrolls[i].disabled = true;
+    }
+
+    // Fill in the blank with the answer
+    var blankSpan = document.querySelector('#sentence-display .blank');
+    if (blankSpan) {
+      blankSpan.textContent = correctAnswer;
+    }
+
+    // Float-away animation after brief pause
+    setTimeout(function() {
+      var displayEl = document.getElementById('sentence-display');
+      displayEl.classList.add('float-away');
+    }, 400);
+
+    setTimeout(function() {
+      var result = endQuestion(true);
+      updateSentenceHud();
+      if (result === 'next') {
+        showSentenceQuestion(verb, questions, questionIndex + 1);
+      } else if (result === 'roundComplete') {
+        document.getElementById('enchanted-sentences').classList.add('hidden');
+      }
+    }, 900);
+  } else {
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    endQuestion(false);
+    updateSentenceHud();
+  }
+}
 function startRuneMatching(verb) { console.log('TODO: Rune Matching for', verb); }
 
 /* ── Button Handlers ── */
