@@ -421,7 +421,7 @@ body {
 <!-- ══════════════ VICTORY SCREEN ══════════════ -->
 <div class="screen" id="victory-screen">
   <div class="victory-icon">&#x1F3F0;</div>
-  <div class="victory-title">F&#233;licitations !</div>
+  <div class="victory-title">Apprentie Sorci&#232;re !</div>
   <div class="victory-subtitle">Tu as ma&#238;tris&#233; tous les sortil&#232;ges !</div>
   <div class="victory-crystals" id="victory-crystals">0 &#x1F48E;</div>
   <div class="victory-streak" id="victory-streak">Meilleure s&#233;rie : 0</div>
@@ -554,13 +554,16 @@ function startGame(fromRound) {
   showRoundIntro();
 }
 
+let roundIntroTimeout = null;
+
 function showRoundIntro() {
+  if (roundIntroTimeout) clearTimeout(roundIntroTimeout);
   const round = ROUNDS[state.currentRound];
   document.getElementById('round-label').textContent = 'Tour ' + (state.currentRound + 1) + ' / ' + ROUNDS.length;
   document.getElementById('round-verb').textContent = 'Sortil\u00e8ge : ' + round.verb;
   document.getElementById('round-mechanic').textContent = MECHANIC_NAMES[round.mechanic];
   showScreen('round-intro');
-  setTimeout(startRound, 2000);
+  roundIntroTimeout = setTimeout(startRound, 2000);
 }
 
 function startRound() {
@@ -576,24 +579,24 @@ function startRound() {
 }
 
 function endQuestion(correct) {
-  if (correct) {
-    state.crystals += state.firstTry ? 2 : 1;
-    state.streak++;
-    if (state.streak > state.bestStreak) {
-      state.bestStreak = state.streak;
-      localStorage.setItem(LS_BEST_STREAK, state.bestStreak);
-    }
-  } else {
+  if (!correct) {
     state.streak = 0;
     state.firstTry = false;
-    return; // wrong answer — let player try again
+    return 'retry';
+  }
+  state.crystals += state.firstTry ? 2 : 1;
+  state.streak++;
+  if (state.streak > state.bestStreak) {
+    state.bestStreak = state.streak;
+    localStorage.setItem(LS_BEST_STREAK, state.bestStreak);
   }
   state.currentQuestion++;
   state.firstTry = true;
   if (state.currentQuestion >= 6) {
     showRoundSummary();
+    return 'roundComplete';
   }
-  // else: the active mechanic handles showing the next question
+  return 'next';
 }
 
 function showRoundSummary() {
@@ -639,7 +642,7 @@ function showVictory() {
 }
 
 function saveProgress() {
-  localStorage.setItem(LS_CURRENT_ROUND, state.currentRound);
+  localStorage.setItem(LS_CURRENT_ROUND, state.currentRound + 1);
   localStorage.setItem(LS_GAME_STATE, JSON.stringify({
     crystals: state.crystals,
     streak: state.streak,
@@ -648,10 +651,11 @@ function saveProgress() {
 }
 
 function loadProgress() {
-  var saved = JSON.parse(localStorage.getItem(LS_GAME_STATE) || '{}');
-  state.crystals = saved.crystals || 0;
-  state.streak = saved.streak || 0;
-  state.constellations = saved.constellations || { 'être': 0, 'avoir': 0 };
+  const saved = JSON.parse(localStorage.getItem(LS_GAME_STATE) || '{}');
+  state.crystals = saved.crystals !== undefined ? saved.crystals : 0;
+  state.streak = saved.streak !== undefined ? saved.streak : 0;
+  state.constellations = (saved.constellations && saved.constellations['être'] !== undefined)
+    ? saved.constellations : { 'être': 0, 'avoir': 0 };
 }
 
 /* ── Mechanic Stubs (Tasks 3-5) ── */
