@@ -293,6 +293,77 @@ body {
   line-height: 1.8;
 }
 
+/* ── Constellation Display ── */
+.constellation-display {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 28px;
+}
+
+.constellation-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.constellation-label {
+  font-size: 15px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.constellation-svg .star-unlit {
+  fill: #333;
+  stroke: #555;
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.constellation-svg .star-lit {
+  fill: #ffd866;
+  stroke: #ffec99;
+  stroke-width: 1.5;
+  filter: url(#constellation-glow);
+}
+
+.constellation-svg .star-line-unlit {
+  stroke: #333;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.3;
+}
+
+.constellation-svg .star-line-lit {
+  stroke: #ffd866;
+  stroke-width: 2;
+  opacity: 0.8;
+  filter: url(#constellation-glow);
+}
+
+@keyframes star-pulse {
+  0% { r: 6; opacity: 0.5; }
+  50% { r: 10; opacity: 1; }
+  100% { r: 7; opacity: 1; }
+}
+
+@keyframes star-line-draw {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  100% { stroke-dashoffset: 0; opacity: 0.8; }
+}
+
+.star-new {
+  animation: star-pulse 0.8s ease-out forwards;
+}
+
+.star-line-new {
+  stroke-dasharray: 100;
+  animation: star-line-draw 0.6s ease-out forwards;
+}
+
 /* ── Victory Screen ── */
 #victory-screen .victory-icon {
   font-size: 80px;
@@ -935,6 +1006,7 @@ body {
   <div class="summary-icon">&#x2728;</div>
   <div class="summary-title">Tour termin&#233; !</div>
   <div class="summary-crystals">Cristaux : <span id="summary-crystals-count">0</span> &#x1F48E;</div>
+  <div class="constellation-display" id="summary-constellations"></div>
   <div class="constellation-progress" id="constellation-progress"></div>
   <button class="btn btn-play" id="btn-next-round">Continuer</button>
 </div>
@@ -944,6 +1016,7 @@ body {
   <div class="victory-icon">&#x1F3F0;</div>
   <div class="victory-title">Apprentie Sorci&#232;re !</div>
   <div class="victory-subtitle">Tu as ma&#238;tris&#233; tous les sortil&#232;ges !</div>
+  <div class="constellation-display" id="victory-constellations"></div>
   <div class="victory-crystals" id="victory-crystals">0 &#x1F48E;</div>
   <div class="victory-streak" id="victory-streak">Meilleure s&#233;rie : 0</div>
   <button class="btn btn-play" id="btn-replay">Rejouer</button>
@@ -1122,12 +1195,14 @@ function endQuestion(correct) {
 
 function showRoundSummary() {
   const round = ROUNDS[state.currentRound];
+  var justUnlockedVerb = round.verb;
+  var justUnlockedStarIndex = state.constellations[justUnlockedVerb]; // index before increment
   state.constellations[round.verb]++;
   saveProgress();
 
   document.getElementById('summary-crystals-count').textContent = state.crystals;
 
-  // Build constellation progress display using safe DOM methods
+  // Build text-based progress display
   var progressEl = document.getElementById('constellation-progress');
   progressEl.textContent = '';
   var verbs = ['être', 'avoir'];
@@ -1145,6 +1220,14 @@ function showRoundSummary() {
     }
   }
 
+  // Render SVG constellations
+  renderConstellations(document.getElementById('summary-constellations'));
+
+  // Animate the newly unlocked star after a brief delay
+  setTimeout(function() {
+    animateStarUnlock(justUnlockedVerb, justUnlockedStarIndex);
+  }, 400);
+
   showScreen('round-summary');
 }
 
@@ -1158,6 +1241,9 @@ function showVictory() {
 
   document.getElementById('victory-crystals').textContent = state.crystals + ' \uD83D\uDC8E';
   document.getElementById('victory-streak').textContent = 'Meilleure s\u00e9rie : ' + state.bestStreak;
+
+  // Render fully lit constellations on victory screen
+  renderConstellations(document.getElementById('victory-constellations'));
 
   showScreen('victory');
 }
@@ -1177,6 +1263,127 @@ function loadProgress() {
   state.streak = saved.streak !== undefined ? saved.streak : 0;
   state.constellations = (saved.constellations && saved.constellations['être'] !== undefined)
     ? saved.constellations : { 'être': 0, 'avoir': 0 };
+}
+
+/* ── Constellation Rendering ── */
+// Star positions for each constellation shape
+// Cat shape (être): ears + nose forming a triangle
+var CONSTELLATION_SHAPES = {
+  'être': {
+    label: 'Chat',
+    emoji: '\uD83D\uDC31',
+    stars: [
+      { x: 30, y: 20 },   // left ear
+      { x: 90, y: 20 },   // right ear
+      { x: 60, y: 75 }    // nose
+    ]
+  },
+  'avoir': {
+    label: 'Baguette',
+    emoji: '\uD83E\uDE84',
+    stars: [
+      { x: 25, y: 80 },   // bottom of wand
+      { x: 60, y: 45 },   // middle
+      { x: 95, y: 10 }    // tip with sparkle
+    ]
+  }
+};
+
+function renderConstellations(container) {
+  container.innerHTML = '';
+  var verbs = ['être', 'avoir'];
+  for (var v = 0; v < verbs.length; v++) {
+    var verb = verbs[v];
+    var shape = CONSTELLATION_SHAPES[verb];
+    var litCount = state.constellations[verb];
+
+    var group = document.createElement('div');
+    group.className = 'constellation-group';
+
+    var label = document.createElement('div');
+    label.className = 'constellation-label';
+    label.textContent = shape.emoji + ' ' + verb;
+    group.appendChild(label);
+
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '120');
+    svg.setAttribute('height', '100');
+    svg.setAttribute('viewBox', '0 0 120 100');
+    svg.setAttribute('class', 'constellation-svg');
+
+    // Glow filter
+    var defs = document.createElementNS(svgNS, 'defs');
+    var filter = document.createElementNS(svgNS, 'filter');
+    filter.setAttribute('id', 'constellation-glow');
+    var blur = document.createElementNS(svgNS, 'feGaussianBlur');
+    blur.setAttribute('stdDeviation', '3');
+    blur.setAttribute('result', 'glow');
+    filter.appendChild(blur);
+    var merge = document.createElementNS(svgNS, 'feMerge');
+    var mn1 = document.createElementNS(svgNS, 'feMergeNode');
+    mn1.setAttribute('in', 'glow');
+    merge.appendChild(mn1);
+    var mn2 = document.createElementNS(svgNS, 'feMergeNode');
+    mn2.setAttribute('in', 'SourceGraphic');
+    merge.appendChild(mn2);
+    filter.appendChild(merge);
+    defs.appendChild(filter);
+    svg.appendChild(defs);
+
+    // Draw connecting lines between stars
+    for (var i = 1; i < shape.stars.length; i++) {
+      var prev = shape.stars[i - 1];
+      var curr = shape.stars[i];
+      var line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', prev.x);
+      line.setAttribute('y1', prev.y);
+      line.setAttribute('x2', curr.x);
+      line.setAttribute('y2', curr.y);
+      // Line is lit if both endpoints are lit
+      var bothLit = (i - 1) < litCount && i < litCount;
+      line.setAttribute('class', bothLit ? 'star-line-lit' : 'star-line-unlit');
+      line.setAttribute('data-verb', verb);
+      line.setAttribute('data-line-index', i);
+      svg.appendChild(line);
+    }
+
+    // Draw stars
+    for (var s = 0; s < shape.stars.length; s++) {
+      var star = shape.stars[s];
+      var circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', star.x);
+      circle.setAttribute('cy', star.y);
+      circle.setAttribute('r', s < litCount ? 7 : 5);
+      circle.setAttribute('class', s < litCount ? 'star-lit' : 'star-unlit');
+      circle.setAttribute('data-verb', verb);
+      circle.setAttribute('data-star-index', s);
+      svg.appendChild(circle);
+    }
+
+    group.appendChild(svg);
+    container.appendChild(group);
+  }
+}
+
+function animateStarUnlock(verb, starIndex) {
+  // Find the star that was just unlocked and animate it
+  var stars = document.querySelectorAll('.constellation-svg circle[data-verb="' + verb + '"]');
+  if (stars.length > starIndex) {
+    var star = stars[starIndex];
+    star.setAttribute('class', 'star-lit star-new');
+    star.setAttribute('r', '7');
+  }
+
+  // Animate the connecting line to the previous star
+  if (starIndex > 0) {
+    var lines = document.querySelectorAll('.constellation-svg line[data-verb="' + verb + '"]');
+    // Line at index starIndex connects star (starIndex-1) to star (starIndex)
+    if (lines.length >= starIndex) {
+      var line = lines[starIndex - 1];
+      line.setAttribute('class', 'star-line-lit star-line-new');
+    }
+  }
 }
 
 /* ── Spell Casting Mechanic ── */
