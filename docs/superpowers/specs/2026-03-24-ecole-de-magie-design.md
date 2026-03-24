@@ -178,7 +178,7 @@ Wrong answers don't cost anything — the player just doesn't earn the crystal. 
 ## Landing Page Card
 
 ```
-Icon: 🏰
+Icon: 🪄
 Title: L'École de Magie
 Description: Apprends à conjuguer être et avoir
 Tag: Français
