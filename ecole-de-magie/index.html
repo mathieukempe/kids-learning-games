@@ -912,18 +912,69 @@ body {
 }
 
 /* ── Responsive ── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .screen { padding: 32px 16px; }
+  #round-play-screen { padding-top: 48px; padding-bottom: 48px; }
+  #title-screen h1 { font-size: 40px; }
+  .btn { padding: 14px 40px; font-size: 18px; min-height: 48px; }
+  .orb { min-height: 56px; font-size: 20px; min-width: 44px; }
+  .scroll { min-height: 48px; font-size: 22px; padding: 16px 20px; }
+  .rune { min-height: 48px; min-width: 100px; font-size: 18px; padding: 11px 14px; }
+  .grimoire-book { max-width: 100%; }
+  .constellation-display { gap: 24px; }
+  .spell-hud { font-size: 16px; }
+  #round-intro-screen .round-verb { font-size: 34px; }
+  #round-intro-screen .round-mechanic { font-size: 18px; }
+  #victory-screen .victory-title { font-size: 34px; }
+}
+
+/* Mobile */
 @media (max-width: 480px) {
-  #title-screen h1 { font-size: 34px; }
+  .screen { padding: 24px 12px; }
+  #round-play-screen { padding-top: 40px; padding-bottom: 40px; }
+  #title-screen h1 { font-size: 30px; }
   #title-screen .game-icon { font-size: 60px; }
-  .btn { padding: 14px 36px; font-size: 18px; }
-  .prompt { font-size: 20px; }
-  .orb { font-size: 20px; min-height: 60px; }
+  #title-screen .subtitle { font-size: 15px; }
+  .btn { padding: 12px 32px; font-size: 16px; min-height: 48px; }
+  .prompt { font-size: 18px; }
+  .orb { font-size: 18px; min-height: 54px; min-width: 44px; padding: 12px 8px; }
+  .orbs { gap: 12px; max-width: 320px; }
   .wand { display: none; }
-  .grimoire-book { min-height: 110px; }
-  .sentence-display { font-size: 22px; padding: 18px 14px; }
-  .scroll { font-size: 20px; padding: 14px 18px; }
-  .rune { min-width: 90px; min-height: 48px; font-size: 17px; padding: 10px 12px; }
+  .grimoire-book { min-height: 100px; max-width: 100%; }
+  .grimoire-page { padding: 14px 10px; }
+  .sentence-display { font-size: 20px; padding: 16px 12px; min-height: 70px; }
+  .sentence-display .blank { min-width: 70px; }
+  .scroll { font-size: 18px; padding: 14px 16px; min-height: 48px; }
+  .scrolls { max-width: 100%; }
+  .rune { min-width: 80px; min-height: 44px; font-size: 16px; padding: 10px 10px; }
   .rune-board { gap: 0; }
+  .rune-column { gap: 8px; }
+  .spell-hud { font-size: 14px; flex-wrap: wrap; gap: 4px; }
+  .constellation-display { gap: 16px; flex-wrap: wrap; }
+  #round-intro-screen .grimoire { font-size: 56px; }
+  #round-intro-screen .round-verb { font-size: 28px; }
+  #round-intro-screen .round-mechanic { font-size: 16px; }
+  #round-summary-screen .summary-title { font-size: 26px; }
+  #round-summary-screen .summary-crystals { font-size: 18px; }
+  #victory-screen .victory-title { font-size: 30px; }
+  #victory-screen .victory-icon { font-size: 60px; }
+  #victory-screen .victory-crystals { font-size: 22px; }
+  .castle svg { height: 120px; }
+  .castle { height: 120px; }
+}
+
+/* Small mobile (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  #title-screen h1 { font-size: 26px; }
+  .prompt { font-size: 16px; }
+  .orb { font-size: 16px; min-height: 48px; padding: 10px 6px; }
+  .orbs { gap: 10px; max-width: 280px; }
+  .rune { min-width: 70px; min-height: 44px; font-size: 14px; padding: 8px 8px; }
+  .sentence-display { font-size: 18px; padding: 14px 10px; }
+  .scroll { font-size: 16px; padding: 12px 14px; }
+  .btn { padding: 10px 24px; font-size: 15px; }
 }
 </style>
 </head>
