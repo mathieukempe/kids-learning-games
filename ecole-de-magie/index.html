@@ -136,6 +136,7 @@ body {
   z-index: 10;
 }
 .screen.active { display: flex; }
+.hidden { display: none !important; }
 
 /* ── Title Screen ── */
 #title-screen .game-icon {
@@ -291,7 +292,7 @@ body {
     Cristaux récoltés : <span id="best-crystals">0</span> 💎
   </div>
   <button class="btn btn-play" id="btn-play">Jouer</button>
-  <button class="btn btn-continue" id="btn-continue" style="display:none;">Continuer</button>
+  <button class="btn btn-continue hidden" id="btn-continue">Continuer</button>
 </div>
 
 <!-- ══════════════ ROUND INTRO SCREEN ══════════════ -->
@@ -337,15 +338,15 @@ function initTitleScreen() {
   const savedRound = localStorage.getItem(LS_CURRENT_ROUND);
   const btnContinue = document.getElementById('btn-continue');
   if (savedRound) {
-    btnContinue.style.display = '';
+    btnContinue.classList.remove('hidden');
   } else {
-    btnContinue.style.display = 'none';
+    btnContinue.classList.add('hidden');
   }
 }
 
 /* ── Game Start (stub) ── */
 function startGame(fromRound) {
-  const round = fromRound || 1;
+  const round = fromRound !== undefined ? fromRound : 0;
   console.log('startGame() called — starting from round ' + round);
   // TODO: implement in next task
 }
@@ -355,11 +356,11 @@ document.getElementById('btn-play').addEventListener('click', function() {
   // Reset game state
   localStorage.removeItem(LS_CURRENT_ROUND);
   localStorage.removeItem(LS_GAME_STATE);
-  startGame(1);
+  startGame(0);
 });
 
 document.getElementById('btn-continue').addEventListener('click', function() {
-  const savedRound = parseInt(localStorage.getItem(LS_CURRENT_ROUND), 10) || 1;
+  const savedRound = parseInt(localStorage.getItem(LS_CURRENT_ROUND), 10) || 0;
   startGame(savedRound);
 });
 
