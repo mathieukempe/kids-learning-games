@@ -217,13 +217,115 @@ body {
   box-shadow: 0 6px 28px rgba(168,85,247,0.3);
 }
 
-/* ── Placeholder screens ── */
-#round-intro-screen,
-#round-play-screen,
-#round-summary-screen,
-#victory-screen {
+/* ── Round Intro Screen ── */
+#round-intro-screen .grimoire {
+  font-size: 72px;
+  margin-bottom: 16px;
+  animation: roundIntroIn 0.6s ease-out both;
+}
+
+#round-intro-screen .round-label {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 8px;
+  animation: roundIntroIn 0.6s ease-out 0.1s both;
+}
+
+#round-intro-screen .round-verb {
+  font-size: 40px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffd866, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  animation: roundIntroIn 0.6s ease-out 0.2s both;
+}
+
+#round-intro-screen .round-mechanic {
+  font-size: 20px;
+  color: #d8b4fe;
+  animation: roundIntroIn 0.6s ease-out 0.3s both;
+}
+
+@keyframes roundIntroIn {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Round Play Screen ── */
+#round-play-screen {
   color: rgba(255,255,255,0.3);
   font-size: 24px;
+}
+
+/* ── Round Summary Screen ── */
+#round-summary-screen .summary-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+#round-summary-screen .summary-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffd866;
+  margin-bottom: 24px;
+}
+
+#round-summary-screen .summary-crystals {
+  font-size: 22px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+#round-summary-screen .summary-crystals span {
+  color: #ffd866;
+  font-weight: 700;
+}
+
+#round-summary-screen .constellation-progress {
+  font-size: 18px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 32px;
+  line-height: 1.8;
+}
+
+/* ── Victory Screen ── */
+#victory-screen .victory-icon {
+  font-size: 80px;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+#victory-screen .victory-title {
+  font-size: 40px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffd866, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+#victory-screen .victory-subtitle {
+  font-size: 18px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 24px;
+}
+
+#victory-screen .victory-crystals {
+  font-size: 28px;
+  color: #ffd866;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+#victory-screen .victory-streak {
+  font-size: 16px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 32px;
 }
 
 /* ── Responsive ── */
@@ -297,6 +399,10 @@ body {
 
 <!-- ══════════════ ROUND INTRO SCREEN ══════════════ -->
 <div class="screen" id="round-intro-screen">
+  <div class="grimoire">&#x1F4D6;</div>
+  <div class="round-label" id="round-label">Tour 1 / 6</div>
+  <div class="round-verb" id="round-verb">&#234;tre</div>
+  <div class="round-mechanic" id="round-mechanic">Lancer de Sorts</div>
 </div>
 
 <!-- ══════════════ ROUND PLAY SCREEN ══════════════ -->
@@ -305,10 +411,21 @@ body {
 
 <!-- ══════════════ ROUND SUMMARY SCREEN ══════════════ -->
 <div class="screen" id="round-summary-screen">
+  <div class="summary-icon">&#x2728;</div>
+  <div class="summary-title">Tour termin&#233; !</div>
+  <div class="summary-crystals">Cristaux : <span id="summary-crystals-count">0</span> &#x1F48E;</div>
+  <div class="constellation-progress" id="constellation-progress"></div>
+  <button class="btn btn-play" id="btn-next-round">Continuer</button>
 </div>
 
 <!-- ══════════════ VICTORY SCREEN ══════════════ -->
 <div class="screen" id="victory-screen">
+  <div class="victory-icon">&#x1F3F0;</div>
+  <div class="victory-title">F&#233;licitations !</div>
+  <div class="victory-subtitle">Tu as ma&#238;tris&#233; tous les sortil&#232;ges !</div>
+  <div class="victory-crystals" id="victory-crystals">0 &#x1F48E;</div>
+  <div class="victory-streak" id="victory-streak">Meilleure s&#233;rie : 0</div>
+  <button class="btn btn-play" id="btn-replay">Rejouer</button>
 </div>
 
 <script>
@@ -344,24 +461,230 @@ function initTitleScreen() {
   }
 }
 
-/* ── Game Start (stub) ── */
+/* ── Conjugation Data ── */
+const VERBS = {
+  'être': {
+    conjugations: [
+      { pronoun: 'je', form: 'suis' },
+      { pronoun: 'tu', form: 'es' },
+      { pronoun: 'il/elle', form: 'est' },
+      { pronoun: 'nous', form: 'sommes' },
+      { pronoun: 'vous', form: 'êtes' },
+      { pronoun: 'ils/elles', form: 'sont' }
+    ],
+    sentences: [
+      { text: 'Je ___ une sorcière', answer: 'suis' },
+      { text: 'Tu ___ très courageux', answer: 'es' },
+      { text: 'Elle ___ dans le château', answer: 'est' },
+      { text: 'Nous ___ des apprentis', answer: 'sommes' },
+      { text: 'Vous ___ prêts pour le sortilège', answer: 'êtes' },
+      { text: 'Ils ___ au sommet de la tour', answer: 'sont' },
+      { text: 'Je ___ prête pour la magie', answer: 'suis' },
+      { text: 'Tu ___ le meilleur élève', answer: 'es' },
+      { text: 'Il ___ invisible', answer: 'est' },
+      { text: 'Nous ___ dans la forêt enchantée', answer: 'sommes' },
+      { text: 'Vous ___ les gardiens du grimoire', answer: 'êtes' },
+      { text: 'Elles ___ très puissantes', answer: 'sont' }
+    ]
+  },
+  'avoir': {
+    conjugations: [
+      { pronoun: "j'", form: 'ai' },
+      { pronoun: 'tu', form: 'as' },
+      { pronoun: 'il/elle', form: 'a' },
+      { pronoun: 'nous', form: 'avons' },
+      { pronoun: 'vous', form: 'avez' },
+      { pronoun: 'ils/elles', form: 'ont' }
+    ],
+    sentences: [
+      { text: "J' ___ un balai magique", answer: 'ai' },
+      { text: 'Tu ___ une baguette dorée', answer: 'as' },
+      { text: 'Elle ___ un chat noir', answer: 'a' },
+      { text: 'Nous ___ des potions secrètes', answer: 'avons' },
+      { text: 'Vous ___ le grimoire ancien', answer: 'avez' },
+      { text: 'Ils ___ des pouvoirs magiques', answer: 'ont' },
+      { text: "J' ___ une étoile brillante", answer: 'ai' },
+      { text: 'Tu ___ le chapeau pointu', answer: 'as' },
+      { text: 'Il ___ la clé du donjon', answer: 'a' },
+      { text: 'Nous ___ des cristaux enchantés', answer: 'avons' },
+      { text: 'Vous ___ les ingrédients magiques', answer: 'avez' },
+      { text: 'Elles ___ des ailes invisibles', answer: 'ont' }
+    ]
+  }
+};
+
+const ROUNDS = [
+  { verb: 'être', mechanic: 'spellCasting' },
+  { verb: 'avoir', mechanic: 'spellCasting' },
+  { verb: 'être', mechanic: 'enchantedSentences' },
+  { verb: 'avoir', mechanic: 'enchantedSentences' },
+  { verb: 'être', mechanic: 'runeMatching' },
+  { verb: 'avoir', mechanic: 'runeMatching' }
+];
+
+const MECHANIC_NAMES = {
+  spellCasting: 'Lancer de Sorts',
+  enchantedSentences: 'Phrases Enchantées',
+  runeMatching: 'Runes Magiques'
+};
+
+/* ── Game State ── */
+const state = {
+  currentRound: 0,
+  currentQuestion: 0,
+  crystals: 0,
+  streak: 0,
+  bestStreak: parseInt(localStorage.getItem(LS_BEST_STREAK)) || 0,
+  bestCrystals: parseInt(localStorage.getItem(LS_BEST_CRYSTALS)) || 0,
+  constellations: { 'être': 0, 'avoir': 0 },
+  firstTry: true
+};
+
+/* ── Game Flow ── */
 function startGame(fromRound) {
   const round = fromRound !== undefined ? fromRound : 0;
-  console.log('startGame() called — starting from round ' + round);
-  // TODO: implement in next task
+  state.currentRound = round;
+  if (round === 0) {
+    state.crystals = 0;
+    state.streak = 0;
+    state.constellations = { 'être': 0, 'avoir': 0 };
+  } else {
+    loadProgress();
+  }
+  showRoundIntro();
 }
+
+function showRoundIntro() {
+  const round = ROUNDS[state.currentRound];
+  document.getElementById('round-label').textContent = 'Tour ' + (state.currentRound + 1) + ' / ' + ROUNDS.length;
+  document.getElementById('round-verb').textContent = 'Sortil\u00e8ge : ' + round.verb;
+  document.getElementById('round-mechanic').textContent = MECHANIC_NAMES[round.mechanic];
+  showScreen('round-intro');
+  setTimeout(startRound, 2000);
+}
+
+function startRound() {
+  state.currentQuestion = 0;
+  state.firstTry = true;
+  const round = ROUNDS[state.currentRound];
+  showScreen('round-play');
+  switch (round.mechanic) {
+    case 'spellCasting': startSpellCasting(round.verb); break;
+    case 'enchantedSentences': startEnchantedSentences(round.verb); break;
+    case 'runeMatching': startRuneMatching(round.verb); break;
+  }
+}
+
+function endQuestion(correct) {
+  if (correct) {
+    state.crystals += state.firstTry ? 2 : 1;
+    state.streak++;
+    if (state.streak > state.bestStreak) {
+      state.bestStreak = state.streak;
+      localStorage.setItem(LS_BEST_STREAK, state.bestStreak);
+    }
+  } else {
+    state.streak = 0;
+    state.firstTry = false;
+    return; // wrong answer — let player try again
+  }
+  state.currentQuestion++;
+  state.firstTry = true;
+  if (state.currentQuestion >= 6) {
+    showRoundSummary();
+  }
+  // else: the active mechanic handles showing the next question
+}
+
+function showRoundSummary() {
+  const round = ROUNDS[state.currentRound];
+  state.constellations[round.verb]++;
+  saveProgress();
+
+  document.getElementById('summary-crystals-count').textContent = state.crystals;
+
+  // Build constellation progress display using safe DOM methods
+  var progressEl = document.getElementById('constellation-progress');
+  progressEl.textContent = '';
+  var verbs = ['être', 'avoir'];
+  for (var v = 0; v < verbs.length; v++) {
+    var verb = verbs[v];
+    var filled = state.constellations[verb];
+    var total = 3;
+    var line = verb + ' : ';
+    for (var i = 0; i < total; i++) {
+      line += i < filled ? '\u2B50' : '\u2606';
+    }
+    progressEl.appendChild(document.createTextNode(line));
+    if (v < verbs.length - 1) {
+      progressEl.appendChild(document.createElement('br'));
+    }
+  }
+
+  showScreen('round-summary');
+}
+
+function showVictory() {
+  if (state.crystals > state.bestCrystals) {
+    state.bestCrystals = state.crystals;
+    localStorage.setItem(LS_BEST_CRYSTALS, state.bestCrystals);
+  }
+  localStorage.removeItem(LS_CURRENT_ROUND);
+  localStorage.removeItem(LS_GAME_STATE);
+
+  document.getElementById('victory-crystals').textContent = state.crystals + ' \uD83D\uDC8E';
+  document.getElementById('victory-streak').textContent = 'Meilleure s\u00e9rie : ' + state.bestStreak;
+
+  showScreen('victory');
+}
+
+function saveProgress() {
+  localStorage.setItem(LS_CURRENT_ROUND, state.currentRound);
+  localStorage.setItem(LS_GAME_STATE, JSON.stringify({
+    crystals: state.crystals,
+    streak: state.streak,
+    constellations: state.constellations
+  }));
+}
+
+function loadProgress() {
+  var saved = JSON.parse(localStorage.getItem(LS_GAME_STATE) || '{}');
+  state.crystals = saved.crystals || 0;
+  state.streak = saved.streak || 0;
+  state.constellations = saved.constellations || { 'être': 0, 'avoir': 0 };
+}
+
+/* ── Mechanic Stubs (Tasks 3-5) ── */
+function startSpellCasting(verb) { console.log('TODO: Spell Casting for', verb); }
+function startEnchantedSentences(verb) { console.log('TODO: Enchanted Sentences for', verb); }
+function startRuneMatching(verb) { console.log('TODO: Rune Matching for', verb); }
 
 /* ── Button Handlers ── */
 document.getElementById('btn-play').addEventListener('click', function() {
-  // Reset game state
   localStorage.removeItem(LS_CURRENT_ROUND);
   localStorage.removeItem(LS_GAME_STATE);
   startGame(0);
 });
 
 document.getElementById('btn-continue').addEventListener('click', function() {
-  const savedRound = parseInt(localStorage.getItem(LS_CURRENT_ROUND), 10) || 0;
+  var savedRound = parseInt(localStorage.getItem(LS_CURRENT_ROUND), 10) || 0;
   startGame(savedRound);
+});
+
+document.getElementById('btn-next-round').addEventListener('click', function() {
+  state.currentRound++;
+  if (state.currentRound >= ROUNDS.length) {
+    showVictory();
+  } else {
+    showRoundIntro();
+  }
+});
+
+document.getElementById('btn-replay').addEventListener('click', function() {
+  localStorage.removeItem(LS_CURRENT_ROUND);
+  localStorage.removeItem(LS_GAME_STATE);
+  initTitleScreen();
+  showScreen('title');
 });
 
 /* ── Init ── */
