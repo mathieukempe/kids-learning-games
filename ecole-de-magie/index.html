@@ -257,8 +257,9 @@ body {
 
 /* ── Round Play Screen ── */
 #round-play-screen {
-  color: rgba(255,255,255,0.3);
-  font-size: 24px;
+  padding-top: 60px;
+  padding-bottom: 60px;
+  justify-content: flex-start;
 }
 
 /* ── Round Summary Screen ── */
@@ -328,11 +329,226 @@ body {
   margin-bottom: 32px;
 }
 
+/* ── Spell Casting ── */
+#spell-casting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+}
+
+.spell-hud {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: rgba(255,255,255,0.7);
+}
+.spell-hud-crystals { color: #ffd866; font-weight: 700; }
+.spell-hud-streak { color: #f97316; font-weight: 700; }
+.spell-hud-progress { color: rgba(255,255,255,0.5); }
+
+/* Grimoire (open book) */
+.grimoire-book {
+  display: flex;
+  width: 100%;
+  max-width: 440px;
+  min-height: 140px;
+  margin-bottom: 28px;
+  animation: grimoire-float 3.5s ease-in-out infinite;
+}
+
+.grimoire-page {
+  flex: 1;
+  background: linear-gradient(145deg, #2a1a4e 0%, #1a0e35 100%);
+  border: 2px solid rgba(168,85,247,0.3);
+  padding: 20px 16px;
+  position: relative;
+}
+.grimoire-left {
+  border-radius: 12px 0 0 12px;
+  border-right: 1px solid rgba(168,85,247,0.2);
+  box-shadow: inset 4px 0 20px rgba(168,85,247,0.1), -4px 4px 24px rgba(0,0,0,0.5);
+}
+.grimoire-left::after {
+  content: '✦ ✦ ✦';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(168,85,247,0.2);
+  font-size: 20px;
+  letter-spacing: 8px;
+}
+.grimoire-right {
+  border-radius: 0 12px 12px 0;
+  border-left: 1px solid rgba(168,85,247,0.15);
+  box-shadow: inset -4px 0 20px rgba(168,85,247,0.1), 4px 4px 24px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prompt {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffd866;
+  text-shadow: 0 0 12px rgba(255,216,102,0.4);
+  text-align: center;
+  line-height: 1.4;
+}
+
+@keyframes grimoire-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Orbs */
+.orbs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: 20px;
+}
+
+.orb {
+  min-width: 80px;
+  min-height: 68px;
+  padding: 14px 10px;
+  border: none;
+  border-radius: 50px;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(145deg, #6b21a8, #4c1d95);
+  box-shadow: 0 0 16px rgba(168,85,247,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.orb::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 60%);
+  pointer-events: none;
+}
+.orb:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 0 28px rgba(168,85,247,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.orb:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.orb:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Correct orb */
+.orb.correct {
+  background: linear-gradient(145deg, #16a34a, #15803d);
+  box-shadow: 0 0 32px rgba(34,197,94,0.7);
+  animation: orb-correct 0.6s ease-out forwards;
+}
+@keyframes orb-correct {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1.05); opacity: 0.85; }
+}
+
+/* Wrong orb */
+.orb.wrong {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  box-shadow: 0 0 24px rgba(239,68,68,0.6);
+  animation: orb-shake 0.5s ease-out;
+}
+@keyframes orb-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+/* Wand */
+.wand {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-20deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+.wand-stick {
+  width: 8px;
+  height: 100px;
+  background: linear-gradient(180deg, #8b5e3c, #5c3a1e);
+  border-radius: 4px;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.4);
+}
+.wand-tip {
+  font-size: 22px;
+  margin-top: -6px;
+  filter: drop-shadow(0 0 6px rgba(255,216,102,0.6));
+}
+
+.wand.casting {
+  opacity: 1;
+  animation: wand-cast 0.5s ease-out;
+}
+@keyframes wand-cast {
+  0% { transform: translateY(-50%) rotate(-20deg); }
+  40% { transform: translateY(-50%) rotate(10deg); }
+  100% { transform: translateY(-50%) rotate(-20deg); }
+}
+
+/* Wand beam */
+.wand-beam {
+  position: absolute;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(255,216,102,0.8), rgba(168,85,247,0.8));
+  box-shadow: 0 0 12px rgba(255,216,102,0.6), 0 0 24px rgba(168,85,247,0.4);
+  border-radius: 3px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+}
+.wand-beam.active {
+  animation: beam-fire 0.5s ease-out forwards;
+}
+@keyframes beam-fire {
+  0% { opacity: 1; width: 0; }
+  50% { opacity: 1; width: 120px; }
+  100% { opacity: 0; width: 160px; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   #title-screen h1 { font-size: 34px; }
   #title-screen .game-icon { font-size: 60px; }
   .btn { padding: 14px 36px; font-size: 18px; }
+  .prompt { font-size: 20px; }
+  .orb { font-size: 20px; min-height: 60px; }
+  .wand { display: none; }
+  .grimoire-book { min-height: 110px; }
 }
 </style>
 </head>
@@ -407,6 +623,25 @@ body {
 
 <!-- ══════════════ ROUND PLAY SCREEN ══════════════ -->
 <div class="screen" id="round-play-screen">
+  <div id="spell-casting" class="hidden">
+    <div class="spell-hud">
+      <span class="spell-hud-crystals">💎 <span id="spell-crystals">0</span></span>
+      <span class="spell-hud-progress" id="spell-progress">1 / 6</span>
+      <span class="spell-hud-streak">🔥 <span id="spell-streak">0</span></span>
+    </div>
+    <div class="grimoire-book">
+      <div class="grimoire-page grimoire-left"></div>
+      <div class="grimoire-page grimoire-right">
+        <div class="prompt" id="spell-prompt">être → nous ___</div>
+      </div>
+    </div>
+    <div class="orbs" id="spell-orbs"></div>
+    <div class="wand" id="spell-wand">
+      <div class="wand-stick"></div>
+      <div class="wand-tip">✨</div>
+    </div>
+    <div class="wand-beam" id="wand-beam"></div>
+  </div>
 </div>
 
 <!-- ══════════════ ROUND SUMMARY SCREEN ══════════════ -->
@@ -658,8 +893,109 @@ function loadProgress() {
     ? saved.constellations : { 'être': 0, 'avoir': 0 };
 }
 
-/* ── Mechanic Stubs (Tasks 3-5) ── */
-function startSpellCasting(verb) { console.log('TODO: Spell Casting for', verb); }
+/* ── Spell Casting Mechanic ── */
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function startSpellCasting(verb) {
+  var container = document.getElementById('spell-casting');
+  container.classList.remove('hidden');
+  // Shuffle conjugations to get random question order
+  var conjugations = shuffleArray(VERBS[verb].conjugations);
+  updateSpellHud();
+  showSpellQuestion(verb, conjugations, 0);
+}
+
+function updateSpellHud() {
+  document.getElementById('spell-crystals').textContent = state.crystals;
+  document.getElementById('spell-progress').textContent = (state.currentQuestion + 1) + ' / 6';
+  document.getElementById('spell-streak').textContent = state.streak;
+}
+
+function generateDistractors(verb, correctForm, count) {
+  var allForms = VERBS[verb].conjugations.map(function(c) { return c.form; });
+  var others = allForms.filter(function(f) { return f !== correctForm; });
+  return shuffleArray(others).slice(0, count);
+}
+
+function showSpellQuestion(verb, conjugations, questionIndex) {
+  var conj = conjugations[questionIndex];
+  var pronoun = conj.pronoun;
+  var correctForm = conj.form;
+
+  // Update prompt
+  var promptEl = document.getElementById('spell-prompt');
+  promptEl.textContent = verb + ' \u2192 ' + pronoun + ' ___';
+
+  // Generate options: 1 correct + 3 distractors
+  var distractors = generateDistractors(verb, correctForm, 3);
+  var options = shuffleArray([correctForm].concat(distractors));
+
+  // Build orb buttons
+  var orbsContainer = document.getElementById('spell-orbs');
+  orbsContainer.textContent = '';
+
+  for (var i = 0; i < options.length; i++) {
+    (function(option) {
+      var btn = document.createElement('button');
+      btn.className = 'orb';
+      btn.textContent = option;
+      btn.addEventListener('click', function() {
+        handleOrbClick(btn, option, correctForm, verb, conjugations, questionIndex);
+      });
+      orbsContainer.appendChild(btn);
+    })(options[i]);
+  }
+
+  updateSpellHud();
+}
+
+function handleOrbClick(btn, chosen, correctForm, verb, conjugations, questionIndex) {
+  if (btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+
+  if (chosen === correctForm) {
+    // Correct answer
+    btn.classList.add('correct');
+    // Disable all orbs
+    var allOrbs = document.querySelectorAll('#spell-orbs .orb');
+    for (var i = 0; i < allOrbs.length; i++) {
+      allOrbs[i].disabled = true;
+    }
+    // Wand animation
+    var wand = document.getElementById('spell-wand');
+    wand.classList.add('casting');
+    // Beam animation
+    var beam = document.getElementById('wand-beam');
+    beam.classList.remove('active');
+    void beam.offsetWidth;
+    beam.classList.add('active');
+
+    setTimeout(function() {
+      wand.classList.remove('casting');
+      beam.classList.remove('active');
+
+      var result = endQuestion(true);
+      updateSpellHud();
+      if (result === 'next') {
+        showSpellQuestion(verb, conjugations, questionIndex + 1);
+      } else if (result === 'roundComplete') {
+        document.getElementById('spell-casting').classList.add('hidden');
+      }
+    }, 700);
+  } else {
+    // Wrong answer
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    endQuestion(false);
+    updateSpellHud();
+  }
+}
 function startEnchantedSentences(verb) { console.log('TODO: Enchanted Sentences for', verb); }
 function startRuneMatching(verb) { console.log('TODO: Rune Matching for', verb); }
 
