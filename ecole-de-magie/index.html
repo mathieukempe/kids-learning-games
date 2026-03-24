@@ -872,6 +872,45 @@ body {
   transform-origin: 0 50%;
 }
 
+/* ── Particle Canvas ── */
+#particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── Aurora Borealis ── */
+#aurora {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 200px;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.5s;
+  background: linear-gradient(
+    180deg,
+    rgba(34,197,94,0.25) 0%,
+    rgba(168,85,247,0.2) 40%,
+    rgba(59,130,246,0.15) 70%,
+    transparent 100%
+  );
+  filter: blur(20px);
+}
+#aurora.aurora-active {
+  opacity: 1;
+  animation: auroraWave 3s ease-in-out forwards;
+}
+@keyframes auroraWave {
+  0% { opacity: 0; transform: translateX(-5%) scaleY(0.8); }
+  20% { opacity: 1; transform: translateX(2%) scaleY(1.1); }
+  50% { opacity: 0.8; transform: translateX(-2%) scaleY(1); }
+  80% { opacity: 0.6; transform: translateX(3%) scaleY(0.9); }
+  100% { opacity: 0; transform: translateX(0) scaleY(1); }
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   #title-screen h1 { font-size: 34px; }
@@ -935,6 +974,11 @@ body {
     <rect x="813" y="135" width="5" height="6" rx="1" fill="#a855f7" opacity="0.4" />
   </svg>
 </div>
+
+<!-- Particle canvas overlay -->
+<canvas id="particles"></canvas>
+<!-- Aurora borealis effect -->
+<div id="aurora"></div>
 
 <!-- ══════════════ TITLE SCREEN ══════════════ -->
 <div class="screen active" id="title-screen">
@@ -1023,6 +1067,134 @@ body {
 </div>
 
 <script>
+/* ── Particle System ── */
+var particleCanvas = document.getElementById('particles');
+var particleCtx = particleCanvas.getContext('2d');
+var particles = [];
+var MAX_PARTICLES = 50;
+var victoryRaining = false;
+
+function resizeParticleCanvas() {
+  particleCanvas.width = window.innerWidth;
+  particleCanvas.height = window.innerHeight;
+}
+resizeParticleCanvas();
+window.addEventListener('resize', resizeParticleCanvas);
+
+function spawnParticles(x, y, color, count) {
+  var toSpawn = Math.min(count, MAX_PARTICLES - particles.length);
+  for (var i = 0; i < toSpawn; i++) {
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -Math.random() * 3 - 1,
+      size: Math.random() * 4 + 2,
+      color: color,
+      opacity: 1,
+      life: 60 + Math.random() * 40,
+      star: Math.random() > 0.5
+    });
+  }
+}
+
+function spawnBurst(x, y, count) {
+  var colors = ['#ffd866', '#c084fc', '#f9a8d4', '#67e8f9'];
+  var toSpawn = Math.min(count, MAX_PARTICLES - particles.length);
+  for (var i = 0; i < toSpawn; i++) {
+    var angle = (Math.PI * 2 * i) / toSpawn + (Math.random() - 0.5) * 0.5;
+    var speed = Math.random() * 3 + 1.5;
+    particles.push({
+      x: x, y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      size: Math.random() * 5 + 2,
+      color: colors[i % colors.length],
+      opacity: 1,
+      life: 80 + Math.random() * 40,
+      star: Math.random() > 0.3
+    });
+  }
+}
+
+function drawStar(ctx, cx, cy, size) {
+  var spikes = 5;
+  var outerR = size;
+  var innerR = size * 0.4;
+  var rot = Math.PI / 2 * 3;
+  var step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerR);
+  for (var i = 0; i < spikes; i++) {
+    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+    rot += step;
+  }
+  ctx.lineTo(cx, cy - outerR);
+  ctx.closePath();
+  ctx.fill();
+}
+
+var victoryFrameCount = 0;
+
+function updateParticles() {
+  particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+  particles = particles.filter(function(p) { return p.life > 0; });
+
+  // Victory rain: spawn gentle particles
+  if (victoryRaining) {
+    victoryFrameCount++;
+    if (victoryFrameCount % 8 === 0 && particles.length < MAX_PARTICLES) {
+      var rx = Math.random() * particleCanvas.width;
+      var colors = ['#ffd866', '#c084fc'];
+      particles.push({
+        x: rx, y: -10,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: Math.random() * 1 + 0.5,
+        size: Math.random() * 3 + 1.5,
+        color: colors[Math.floor(Math.random() * 2)],
+        opacity: 0.8,
+        life: 200 + Math.random() * 100,
+        star: true
+      });
+    }
+  }
+
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.02;
+    p.opacity = Math.min(1, p.life / 60);
+    p.life--;
+    particleCtx.globalAlpha = p.opacity;
+    particleCtx.fillStyle = p.color;
+    if (p.star) {
+      drawStar(particleCtx, p.x, p.y, p.size);
+    } else {
+      particleCtx.beginPath();
+      particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      particleCtx.fill();
+    }
+  }
+  particleCtx.globalAlpha = 1;
+  requestAnimationFrame(updateParticles);
+}
+updateParticles();
+
+/* ── Aurora Effect ── */
+var auroraTimeout = null;
+function triggerAurora() {
+  var aurora = document.getElementById('aurora');
+  aurora.classList.remove('aurora-active');
+  void aurora.offsetWidth; // force reflow
+  aurora.classList.add('aurora-active');
+  if (auroraTimeout) clearTimeout(auroraTimeout);
+  auroraTimeout = setTimeout(function() {
+    aurora.classList.remove('aurora-active');
+  }, 3200);
+}
+
 /* ── Screen Management ── */
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1136,6 +1308,7 @@ const state = {
 
 /* ── Game Flow ── */
 function startGame(fromRound) {
+  victoryRaining = false;
   const round = fromRound !== undefined ? fromRound : 0;
   state.currentRound = round;
   if (round === 0) {
@@ -1184,6 +1357,7 @@ function endQuestion(correct) {
     state.bestStreak = state.streak;
     localStorage.setItem(LS_BEST_STREAK, state.bestStreak);
   }
+  if (state.streak >= 3) triggerAurora();
   state.currentQuestion++;
   state.firstTry = true;
   if (state.currentQuestion >= 6) {
@@ -1246,6 +1420,13 @@ function showVictory() {
   renderConstellations(document.getElementById('victory-constellations'));
 
   showScreen('victory');
+
+  // Victory celebration particles
+  var cx = window.innerWidth / 2;
+  var cy = window.innerHeight / 2;
+  spawnBurst(cx, cy, 30);
+  victoryRaining = true;
+  victoryFrameCount = 0;
 }
 
 function saveProgress() {
@@ -1455,6 +1636,9 @@ function handleOrbClick(btn, chosen, correctForm, verb, conjugations, questionIn
   if (chosen === correctForm) {
     // Correct answer
     btn.classList.add('correct');
+    // Particles on correct orb
+    var orbRect = btn.getBoundingClientRect();
+    spawnParticles(orbRect.left + orbRect.width / 2, orbRect.top + orbRect.height / 2, '#ffd866', 15);
     // Disable all orbs
     var allOrbs = document.querySelectorAll('#spell-orbs .orb');
     for (var i = 0; i < allOrbs.length; i++) {
@@ -1574,6 +1758,9 @@ function handleScrollClick(btn, chosen, correctAnswer, verb, questions, question
 
   if (chosen === correctAnswer) {
     btn.classList.add('correct');
+    // Particles on correct scroll
+    var scrollRect = btn.getBoundingClientRect();
+    spawnParticles(scrollRect.left + scrollRect.width / 2, scrollRect.top + scrollRect.height / 2, '#c084fc', 10);
     // Disable all scrolls
     var allScrolls = document.querySelectorAll('#sentence-scrolls .scroll');
     for (var i = 0; i < allScrolls.length; i++) {
@@ -1793,6 +1980,11 @@ function tryMatch(pronounEl, conjEl) {
     pronounEl.classList.remove('selected');
     pronounEl.classList.add('matched');
     conjEl.classList.add('matched');
+    // Particles on both matched runes
+    var pRect = pronounEl.getBoundingClientRect();
+    var cRect = conjEl.getBoundingClientRect();
+    spawnParticles(pRect.left + pRect.width / 2, pRect.top + pRect.height / 2, '#ffd866', 8);
+    spawnParticles(cRect.left + cRect.width / 2, cRect.top + cRect.height / 2, '#c084fc', 8);
     runeState.selectedPronoun = null;
 
     // Set firstTry for endQuestion
