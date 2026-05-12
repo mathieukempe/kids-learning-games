@@ -606,34 +606,55 @@ let wordIndex = 0;
 let stars = 0;
 let scoreByWord = {}; // word -> stars earned (out of 3)
 WORDS.forEach(w => scoreByWord[w.word] = 0);
-let frenchVoice = null;
 
 // ──────────────────────────────────────────────────────────────
-// Speech
+// Speech (robust: handles iOS autoplay + async voice loading)
 // ──────────────────────────────────────────────────────────────
+const speechSupported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+let frenchVoice = null;
+let audioPrimed = false;
+
 function pickFrenchVoice() {
+  if (!speechSupported) return;
   const voices = speechSynthesis.getVoices();
-  // Prefer fr-FR, then any French variant
   frenchVoice =
     voices.find(v => v.lang === "fr-FR") ||
     voices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr")) ||
     null;
 }
 
-if ("speechSynthesis" in window) {
+if (speechSupported) {
   pickFrenchVoice();
-  speechSynthesis.onvoiceschanged = pickFrenchVoice;
+  // Voices load asynchronously in Chrome; refresh when they arrive.
+  speechSynthesis.addEventListener("voiceschanged", pickFrenchVoice);
+}
+
+// Prime the audio engine inside a user gesture (required on iOS Safari).
+function primeAudio() {
+  if (!speechSupported || audioPrimed) return;
+  audioPrimed = true;
+  try {
+    // Speak a near-silent utterance to unlock the queue.
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    u.lang = "fr-FR";
+    speechSynthesis.speak(u);
+  } catch (e) { /* ignore */ }
 }
 
 function speak(text, opts = {}) {
-  if (!("speechSynthesis" in window)) return;
+  if (!speechSupported) return;
+  // Chrome bug workaround: a long-running synth pauses; resume defensively.
+  try { speechSynthesis.resume(); } catch (e) {}
   speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
   utt.lang = "fr-FR";
   utt.rate = opts.rate ?? 0.85;
   utt.pitch = opts.pitch ?? 1.05;
+  utt.volume = 1;
   if (frenchVoice) utt.voice = frenchVoice;
   if (opts.onend) utt.onend = opts.onend;
+  utt.onerror = e => console.warn("Speech error:", e);
   speechSynthesis.speak(utt);
 }
 
@@ -716,8 +737,7 @@ function renderDiscovery() {
   btn.addEventListener("click", () => {
     speakWord(w.word, btn);
   });
-  // Auto play once after a tiny delay
-  setTimeout(() => speakWord(w.word, btn), 300);
+  speakWord(w.word, btn);
 
   $("next-btn").style.display = "inline-block";
   $("next-btn").textContent = wordIndex < WORDS.length - 1 ? "Mot suivant ➡️" : "Étape suivante ➡️";
@@ -754,7 +774,7 @@ function renderScramble() {
 
   const speakerBtn = $("speaker-btn");
   speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
-  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+  speakWord(w.word, speakerBtn);
 
   // Next empty slot (excluding apostrophes)
   function nextEmptyIdx() {
@@ -837,7 +857,7 @@ function renderChoice() {
   `;
   const speakerBtn = $("speaker-btn");
   speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
-  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+  speakWord(w.word, speakerBtn);
 
   document.querySelectorAll(".choice-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -875,7 +895,7 @@ function renderDictation() {
 
   const speakerBtn = $("speaker-btn");
   speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
-  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+  speakWord(w.word, speakerBtn);
 
   const input = $("dict-input");
   input.focus();
@@ -977,6 +997,7 @@ function celebrate() {
 // Start / restart
 // ──────────────────────────────────────────────────────────────
 function startGame() {
+  primeAudio(); // must happen inside the user-gesture click
   phaseIndex = 0;
   wordIndex = 0;
   stars = 0;
@@ -987,6 +1008,21 @@ function startGame() {
 
 $("start-btn").addEventListener("click", startGame);
 $("restart-btn").addEventListener("click", startGame);
+
+// Also keep the synth alive on every click (Chrome stops it after ~15s idle).
+document.addEventListener("click", () => {
+  if (speechSupported) {
+    try { speechSynthesis.resume(); } catch (e) {}
+  }
+});
+
+// Warn if speech isn't supported at all.
+if (!speechSupported) {
+  const warn = document.createElement("div");
+  warn.style.cssText = "position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(255,107,107,0.2);color:#ff6b6b;padding:10px 18px;border-radius:20px;font-size:14px;z-index:1000;";
+  warn.textContent = "⚠️ Ton navigateur ne supporte pas la voix. Essaie Chrome ou Safari.";
+  document.body.appendChild(warn);
+}
 </script>
 </body>
 </html>
