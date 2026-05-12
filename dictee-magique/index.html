@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dictée Magique</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  text-align: center;
+}
+
+.screen.active { display: flex; }
+
+/* ── Start Screen ── */
+#start-screen .icon {
+  font-size: 90px;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #ffd32a, #ff6b6b, #c56cf0, #70a1ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 30px;
+}
+
+.word-preview {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  width: 100%;
+}
+
+.word-preview h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 14px;
+}
+
+.word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.word-chip {
+  background: linear-gradient(135deg, rgba(255,211,42,0.18), rgba(255,107,107,0.18));
+  border: 1px solid rgba(255,211,42,0.3);
+  color: #ffd32a;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffd32a, #ff6b6b);
+  color: #1a1a2e;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 16px 48px;
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(255,107,107,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(255,107,107,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.15);
+  margin-top: 16px;
+  transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Game Header ── */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.phase-badge {
+  background: rgba(199,108,240,0.18);
+  color: #c56cf0;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stars-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,211,42,0.12);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  color: #ffd32a;
+  font-size: 18px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd32a, #ff6b6b, #c56cf0);
+  transition: width 0.4s ease;
+  border-radius: 4px;
+}
+
+/* ── Phase Title ── */
+.phase-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.phase-hint {
+  color: rgba(255,255,255,0.6);
+  font-size: 16px;
+  margin-bottom: 28px;
+}
+
+/* ── Card (shared) ── */
+.card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px;
+  padding: 40px 32px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* ── Discovery ── */
+.discovery-word {
+  font-size: 56px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffd32a, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.discovery-sentence {
+  font-size: 20px;
+  color: rgba(255,255,255,0.85);
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.discovery-sentence b {
+  color: #ffd32a;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.speaker-btn {
+  background: rgba(112,161,255,0.15);
+  border: 2px solid rgba(112,161,255,0.4);
+  color: #70a1ff;
+  font-size: 32px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.speaker-btn:hover { background: rgba(112,161,255,0.25); transform: scale(1.05); }
+.speaker-btn:active { transform: scale(0.95); }
+.speaker-btn.speaking { animation: pulse 0.8s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ── Scramble ── */
+.target-slots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 28px;
+  min-height: 60px;
+}
+
+.slot {
+  width: 44px;
+  height: 56px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.03);
+  transition: all 0.2s;
+}
+
+.slot.filled {
+  border-style: solid;
+  background: linear-gradient(135deg, rgba(255,211,42,0.15), rgba(255,107,107,0.15));
+  border-color: rgba(255,211,42,0.4);
+  color: #ffd32a;
+  cursor: pointer;
+}
+
+.slot.apostrophe {
+  border-style: solid;
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+}
+
+.letter-bank {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.letter-tile {
+  width: 50px;
+  height: 56px;
+  background: linear-gradient(135deg, #70a1ff, #5352ed);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 28px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(83,82,237,0.3);
+  transition: transform 0.15s, opacity 0.2s;
+  user-select: none;
+}
+
+.letter-tile:hover { transform: translateY(-3px); }
+.letter-tile:active { transform: translateY(0); }
+.letter-tile.used { opacity: 0; pointer-events: none; transform: scale(0.5); }
+
+/* ── Multiple choice ── */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.choice-btn {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.12);
+  color: #fff;
+  padding: 18px 24px;
+  border-radius: 16px;
+  font-size: 22px;
+  font-weight: 600;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.choice-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
+  transform: translateY(-2px);
+}
+
+.choice-btn.correct {
+  background: rgba(123,237,159,0.2);
+  border-color: #7bed9f;
+  color: #7bed9f;
+}
+
+.choice-btn.wrong {
+  background: rgba(255,107,107,0.2);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.choice-btn:disabled { cursor: default; }
+
+/* ── Dictation ── */
+.dictation-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 18px 22px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffd32a;
+  font-family: inherit;
+  text-align: center;
+  margin-top: 24px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dictation-input:focus { border-color: #ffd32a; }
+.dictation-input.correct { border-color: #7bed9f; color: #7bed9f; }
+.dictation-input.wrong { border-color: #ff6b6b; color: #ff6b6b; }
+
+/* ── Feedback ── */
+.feedback {
+  min-height: 60px;
+  margin-top: 18px;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.feedback .icon-fb { font-size: 36px; line-height: 1; }
+.feedback.good { color: #7bed9f; }
+.feedback.bad { color: #ff6b6b; }
+.feedback .correct-answer {
+  color: #ffd32a;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #c56cf0, #70a1ff);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 36px;
+  border-radius: 30px;
+  box-shadow: 0 6px 18px rgba(112,161,255,0.3);
+  margin-top: 14px;
+  transition: transform 0.15s;
+}
+
+.action-btn:hover { transform: translateY(-2px); }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── End Screen ── */
+#end-screen .trophy { font-size: 110px; margin-bottom: 14px; animation: float 3s ease-in-out infinite; }
+
+#end-screen .final-score {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.85);
+}
+
+#end-screen .final-stars {
+  font-size: 56px;
+  font-weight: 800;
+  color: #ffd32a;
+  margin-bottom: 24px;
+  letter-spacing: 2px;
+}
+
+.recap {
+  background: rgba(255,255,255,0.06);
+  border-radius: 18px;
+  padding: 22px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.recap h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 12px;
+}
+
+.recap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 18px;
+}
+.recap-row:last-child { border-bottom: none; }
+.recap-word { color: #ffd32a; font-weight: 700; }
+.recap-stars { color: #ffd32a; font-weight: 700; }
+
+/* ── Confetti ── */
+.confetti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 14px;
+  pointer-events: none;
+  animation: fall 2.4s linear forwards;
+  z-index: 999;
+}
+
+@keyframes fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  h1 { font-size: 36px; }
+  .phase-title { font-size: 24px; }
+  .discovery-word { font-size: 40px; }
+  .discovery-sentence { font-size: 17px; }
+  .slot { width: 36px; height: 48px; font-size: 22px; }
+  .letter-tile { width: 42px; height: 50px; font-size: 22px; }
+  .choice-btn { font-size: 18px; padding: 14px 18px; }
+  .dictation-input { font-size: 22px; }
+  .card { padding: 28px 18px; }
+}
+
+a.home {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 14px;
+  background: rgba(255,255,255,0.08);
+  padding: 8px 14px;
+  border-radius: 20px;
+  transition: background 0.2s, color 0.2s;
+}
+a.home:hover { background: rgba(255,255,255,0.15); color: #fff; }
+</style>
+</head>
+<body>
+<a class="home" href="../">← Accueil</a>
+
+<!-- ────────── Start Screen ────────── -->
+<div id="start-screen" class="screen active">
+  <div class="icon">📚✨</div>
+  <h1>Dictée Magique</h1>
+  <p class="subtitle">Apprends les mots de ta dictée en t'amusant !</p>
+
+  <div class="word-preview">
+    <h3>🌟 Tes mots de la semaine</h3>
+    <div class="word-list">
+      <span class="word-chip">parfois</span>
+      <span class="word-chip">quelquefois</span>
+      <span class="word-chip">chaque</span>
+      <span class="word-chip">chacun</span>
+      <span class="word-chip">aujourd'hui</span>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="start-btn">Commencer l'aventure ✨</button>
+</div>
+
+<!-- ────────── Game Screen ────────── -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <span class="phase-badge" id="phase-badge">Étape 1 / 4</span>
+    <span class="stars-display">⭐ <span id="stars-count">0</span></span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <h2 class="phase-title" id="phase-title">Découverte</h2>
+  <p class="phase-hint" id="phase-hint">Écoute et regarde bien chaque mot.</p>
+
+  <div class="card" id="game-card"></div>
+
+  <div class="feedback" id="feedback"></div>
+  <button class="action-btn" id="next-btn" style="display:none;">Suivant ➡️</button>
+</div>
+
+<!-- ────────── End Screen ────────── -->
+<div id="end-screen" class="screen">
+  <div class="trophy" id="trophy">🏆</div>
+  <h1 id="end-title">Bravo !</h1>
+  <p class="final-score">Tu as gagné</p>
+  <div class="final-stars" id="end-stars">⭐ 0 / 15</div>
+
+  <div class="recap">
+    <h3>📖 Récapitulatif</h3>
+    <div id="recap-list"></div>
+  </div>
+
+  <button class="btn-primary" id="restart-btn">Rejouer 🔄</button>
+  <a href="../" style="margin-top:14px;"><button class="btn-secondary">Autres jeux</button></a>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// Data
+// ──────────────────────────────────────────────────────────────
+const WORDS = [
+  {
+    word: "parfois",
+    sentence: "Parfois, je joue avec mon chien dans le jardin.",
+    distractors: ["parfoit", "parfoix", "parfoie"]
+  },
+  {
+    word: "quelquefois",
+    sentence: "Quelquefois, nous allons à la plage le dimanche.",
+    distractors: ["quelquesfois", "quelque fois", "quelquefoit"]
+  },
+  {
+    word: "chaque",
+    sentence: "Chaque matin, je bois un grand bol de chocolat chaud.",
+    distractors: ["chaqe", "chake", "chacque"]
+  },
+  {
+    word: "chacun",
+    sentence: "Chacun apporte un dessert pour la fête de l'école.",
+    distractors: ["chaqun", "chakun", "chacuns"]
+  },
+  {
+    word: "aujourd'hui",
+    sentence: "Aujourd'hui, c'est un jour très spécial !",
+    distractors: ["aujourdui", "aujourdhui", "aujourd'huit", "ojourd'hui"]
+  }
+];
+
+const PHASES = [
+  { id: "discovery", title: "🔍 Découverte", hint: "Écoute et regarde bien chaque mot.", scored: false },
+  { id: "scramble",  title: "🧩 Lettres mélangées", hint: "Remets les lettres dans le bon ordre.", scored: true },
+  { id: "choice",    title: "✅ Trouve le bon mot", hint: "Quelle est la bonne orthographe ?", scored: true },
+  { id: "dictation", title: "🎧 Dictée", hint: "Écoute le mot et écris-le.", scored: true }
+];
+
+const MAX_STARS = WORDS.length * 3;
+
+// ──────────────────────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────────────────────
+let phaseIndex = 0;
+let wordIndex = 0;
+let stars = 0;
+let scoreByWord = {}; // word -> stars earned (out of 3)
+WORDS.forEach(w => scoreByWord[w.word] = 0);
+let frenchVoice = null;
+
+// ──────────────────────────────────────────────────────────────
+// Speech
+// ──────────────────────────────────────────────────────────────
+function pickFrenchVoice() {
+  const voices = speechSynthesis.getVoices();
+  // Prefer fr-FR, then any French variant
+  frenchVoice =
+    voices.find(v => v.lang === "fr-FR") ||
+    voices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr")) ||
+    null;
+}
+
+if ("speechSynthesis" in window) {
+  pickFrenchVoice();
+  speechSynthesis.onvoiceschanged = pickFrenchVoice;
+}
+
+function speak(text, opts = {}) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = "fr-FR";
+  utt.rate = opts.rate ?? 0.85;
+  utt.pitch = opts.pitch ?? 1.05;
+  if (frenchVoice) utt.voice = frenchVoice;
+  if (opts.onend) utt.onend = opts.onend;
+  speechSynthesis.speak(utt);
+}
+
+function speakWord(word, btn) {
+  if (btn) btn.classList.add("speaking");
+  speak(word, {
+    rate: 0.75,
+    onend: () => btn && btn.classList.remove("speaking")
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────
+function $(id) { return document.getElementById(id); }
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function updateHeader() {
+  $("phase-badge").textContent = `Étape ${phaseIndex + 1} / ${PHASES.length}`;
+  $("phase-title").textContent = PHASES[phaseIndex].title;
+  $("phase-hint").textContent = PHASES[phaseIndex].hint;
+  $("stars-count").textContent = stars;
+  const totalSteps = PHASES.length * WORDS.length;
+  const doneSteps = phaseIndex * WORDS.length + wordIndex;
+  $("progress-fill").style.width = ((doneSteps / totalSteps) * 100) + "%";
+}
+
+function clearFeedback() {
+  $("feedback").innerHTML = "";
+  $("feedback").className = "feedback";
+  $("next-btn").style.display = "none";
+}
+
+function showFeedback(good, correctWord) {
+  const fb = $("feedback");
+  fb.className = "feedback " + (good ? "good" : "bad");
+  if (good) {
+    fb.innerHTML = `<div class="icon-fb">🎉</div><div>Bravo !</div>`;
+  } else {
+    fb.innerHTML = `<div class="icon-fb">💪</div><div>Presque ! Le bon mot est :</div><div class="correct-answer">${correctWord}</div>`;
+  }
+  $("next-btn").style.display = "inline-block";
+}
+
+function awardStar(word) {
+  stars++;
+  scoreByWord[word]++;
+  $("stars-count").textContent = stars;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Phase: Discovery
+// ──────────────────────────────────────────────────────────────
+function renderDiscovery() {
+  const w = WORDS[wordIndex];
+  const card = $("game-card");
+  const sentenceHTML = w.sentence.replace(
+    new RegExp(w.word, "i"),
+    `<b>${w.word}</b>`
+  );
+  card.innerHTML = `
+    <div class="discovery-word">${w.word}</div>
+    <div class="discovery-sentence">${sentenceHTML}</div>
+    <button class="speaker-btn" id="speaker-btn" aria-label="Écouter">🔊</button>
+  `;
+  const btn = $("speaker-btn");
+  btn.addEventListener("click", () => {
+    speakWord(w.word, btn);
+  });
+  // Auto play once after a tiny delay
+  setTimeout(() => speakWord(w.word, btn), 300);
+
+  $("next-btn").style.display = "inline-block";
+  $("next-btn").textContent = wordIndex < WORDS.length - 1 ? "Mot suivant ➡️" : "Étape suivante ➡️";
+}
+
+// ──────────────────────────────────────────────────────────────
+// Phase: Scramble
+// ──────────────────────────────────────────────────────────────
+function renderScramble() {
+  const w = WORDS[wordIndex];
+  const letters = w.word.split("");
+  const card = $("game-card");
+
+  const slotsHTML = letters.map((ch, i) => {
+    if (ch === "'") return `<div class="slot apostrophe" data-idx="${i}">'</div>`;
+    return `<div class="slot" data-idx="${i}"></div>`;
+  }).join("");
+
+  // Bank: only the actual letters (no apostrophe), shuffled
+  const bankLetters = letters
+    .map((ch, i) => ({ ch, i }))
+    .filter(x => x.ch !== "'");
+  const shuffled = shuffle(bankLetters);
+
+  const bankHTML = shuffled.map((x, bi) =>
+    `<div class="letter-tile" data-letter="${x.ch}" data-bank-idx="${bi}">${x.ch}</div>`
+  ).join("");
+
+  card.innerHTML = `
+    <button class="speaker-btn" id="speaker-btn" aria-label="Écouter" style="margin-bottom:24px;">🔊</button>
+    <div class="target-slots" id="slots">${slotsHTML}</div>
+    <div class="letter-bank" id="bank">${bankHTML}</div>
+  `;
+
+  const speakerBtn = $("speaker-btn");
+  speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
+  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+
+  // Next empty slot (excluding apostrophes)
+  function nextEmptyIdx() {
+    for (let i = 0; i < letters.length; i++) {
+      if (letters[i] === "'") continue;
+      const slot = document.querySelector(`.slot[data-idx="${i}"]`);
+      if (!slot.classList.contains("filled")) return i;
+    }
+    return -1;
+  }
+
+  // Click a tile → place into next empty slot
+  document.querySelectorAll(".letter-tile").forEach(tile => {
+    tile.addEventListener("click", () => {
+      if (tile.classList.contains("used")) return;
+      const idx = nextEmptyIdx();
+      if (idx === -1) return;
+      const slot = document.querySelector(`.slot[data-idx="${idx}"]`);
+      slot.classList.add("filled");
+      slot.textContent = tile.dataset.letter;
+      slot.dataset.bankIdx = tile.dataset.bankIdx;
+      tile.classList.add("used");
+      checkScramble();
+    });
+  });
+
+  // Click filled slot → return its tile
+  $("slots").addEventListener("click", e => {
+    const slot = e.target.closest(".slot.filled");
+    if (!slot) return;
+    const bankIdx = slot.dataset.bankIdx;
+    if (bankIdx == null) return;
+    const tile = document.querySelector(`.letter-tile[data-bank-idx="${bankIdx}"]`);
+    if (tile) tile.classList.remove("used");
+    slot.classList.remove("filled");
+    slot.textContent = "";
+    delete slot.dataset.bankIdx;
+  });
+
+  function checkScramble() {
+    if (nextEmptyIdx() !== -1) return; // not full yet
+    const built = letters.map((ch, i) => {
+      if (ch === "'") return "'";
+      const s = document.querySelector(`.slot[data-idx="${i}"]`);
+      return s.textContent;
+    }).join("");
+    const correct = built === w.word;
+    if (correct) {
+      awardStar(w.word);
+      showFeedback(true, w.word);
+      speak("Super !", { rate: 1, pitch: 1.2 });
+    } else {
+      showFeedback(false, w.word);
+      speak(w.word, { rate: 0.7 });
+    }
+    // Disable further interaction
+    document.querySelectorAll(".letter-tile").forEach(t => t.style.pointerEvents = "none");
+    document.querySelectorAll(".slot").forEach(s => s.style.pointerEvents = "none");
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Phase: Multiple choice
+// ──────────────────────────────────────────────────────────────
+function renderChoice() {
+  const w = WORDS[wordIndex];
+  const card = $("game-card");
+
+  const distractors = shuffle(w.distractors).slice(0, 2);
+  const options = shuffle([w.word, ...distractors]);
+
+  const choicesHTML = options.map(o =>
+    `<button class="choice-btn" data-option="${o}">${o}</button>`
+  ).join("");
+
+  card.innerHTML = `
+    <button class="speaker-btn" id="speaker-btn" aria-label="Écouter" style="margin-bottom:24px;">🔊</button>
+    <p style="color:rgba(255,255,255,0.7); margin-bottom:18px; font-size:17px;">Clique sur le mot bien orthographié.</p>
+    <div class="choices">${choicesHTML}</div>
+  `;
+  const speakerBtn = $("speaker-btn");
+  speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
+  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+
+  document.querySelectorAll(".choice-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const picked = btn.dataset.option;
+      document.querySelectorAll(".choice-btn").forEach(b => {
+        b.disabled = true;
+        if (b.dataset.option === w.word) b.classList.add("correct");
+        else if (b === btn) b.classList.add("wrong");
+      });
+      if (picked === w.word) {
+        awardStar(w.word);
+        showFeedback(true, w.word);
+        speak("Bravo !", { rate: 1, pitch: 1.2 });
+      } else {
+        showFeedback(false, w.word);
+        speak(w.word, { rate: 0.7 });
+      }
+    });
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Phase: Dictation
+// ──────────────────────────────────────────────────────────────
+function renderDictation() {
+  const w = WORDS[wordIndex];
+  const card = $("game-card");
+
+  card.innerHTML = `
+    <p style="color:rgba(255,255,255,0.7); margin-bottom:12px; font-size:17px;">Écoute bien le mot et écris-le.</p>
+    <button class="speaker-btn" id="speaker-btn" aria-label="Écouter">🔊</button>
+    <input type="text" class="dictation-input" id="dict-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Écris le mot ici">
+    <button class="action-btn" id="check-btn" style="margin-top:18px;">Vérifier</button>
+  `;
+
+  const speakerBtn = $("speaker-btn");
+  speakerBtn.addEventListener("click", () => speakWord(w.word, speakerBtn));
+  setTimeout(() => speakWord(w.word, speakerBtn), 300);
+
+  const input = $("dict-input");
+  input.focus();
+
+  function submit() {
+    const val = input.value.trim().toLowerCase();
+    const target = w.word.toLowerCase();
+    input.disabled = true;
+    $("check-btn").disabled = true;
+    if (val === target) {
+      input.classList.add("correct");
+      awardStar(w.word);
+      showFeedback(true, w.word);
+      speak("Excellent !", { rate: 1, pitch: 1.2 });
+    } else {
+      input.classList.add("wrong");
+      showFeedback(false, w.word);
+      speak(w.word, { rate: 0.65 });
+    }
+  }
+
+  $("check-btn").addEventListener("click", submit);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") submit();
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Flow
+// ──────────────────────────────────────────────────────────────
+function renderCurrent() {
+  clearFeedback();
+  updateHeader();
+  const phase = PHASES[phaseIndex].id;
+  if (phase === "discovery")  renderDiscovery();
+  else if (phase === "scramble")  renderScramble();
+  else if (phase === "choice")    renderChoice();
+  else if (phase === "dictation") renderDictation();
+}
+
+function advance() {
+  wordIndex++;
+  if (wordIndex >= WORDS.length) {
+    wordIndex = 0;
+    phaseIndex++;
+    if (phaseIndex >= PHASES.length) {
+      showEnd();
+      return;
+    }
+  }
+  renderCurrent();
+}
+
+$("next-btn").addEventListener("click", advance);
+
+// ──────────────────────────────────────────────────────────────
+// End screen
+// ──────────────────────────────────────────────────────────────
+function showEnd() {
+  $("end-stars").textContent = `⭐ ${stars} / ${MAX_STARS}`;
+
+  let title, trophy;
+  const ratio = stars / MAX_STARS;
+  if (ratio === 1)       { title = "Parfait ! 🌟"; trophy = "🏆"; }
+  else if (ratio >= 0.8) { title = "Super ! 🎉";   trophy = "🥇"; }
+  else if (ratio >= 0.6) { title = "Bien joué !";  trophy = "🥈"; }
+  else if (ratio >= 0.4) { title = "Bon effort !"; trophy = "🥉"; }
+  else                   { title = "Continue à t'entraîner !"; trophy = "💪"; }
+  $("end-title").textContent = title;
+  $("trophy").textContent = trophy;
+
+  const recap = WORDS.map(w => {
+    const s = scoreByWord[w.word];
+    const fullStars = "⭐".repeat(s) + "▫️".repeat(3 - s);
+    return `<div class="recap-row"><span class="recap-word">${w.word}</span><span class="recap-stars">${fullStars}</span></div>`;
+  }).join("");
+  $("recap-list").innerHTML = recap;
+
+  showScreen("end-screen");
+
+  if (ratio >= 0.8) celebrate();
+}
+
+function celebrate() {
+  const colors = ["#ffd32a", "#ff6b6b", "#7bed9f", "#70a1ff", "#c56cf0"];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 0.8 + "s";
+    el.style.animationDuration = (1.8 + Math.random() * 1.2) + "s";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Start / restart
+// ──────────────────────────────────────────────────────────────
+function startGame() {
+  phaseIndex = 0;
+  wordIndex = 0;
+  stars = 0;
+  WORDS.forEach(w => scoreByWord[w.word] = 0);
+  showScreen("game-screen");
+  renderCurrent();
+}
+
+$("start-btn").addEventListener("click", startGame);
+$("restart-btn").addEventListener("click", startGame);
+</script>
+</body>
+</html>
